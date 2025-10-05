@@ -18,7 +18,7 @@
 
 
 ### TODOs:
-[x] Port the [`Tensor` class](./include/tensor.hpp) to a `double`.
-[] Add more datatypes in the `axon` namespace.
+- [x] Port the [`Tensor` class](./include/tensor.hpp) to a `double`.
+- [] Add more datatypes in the `axon` namespace.
 
 
