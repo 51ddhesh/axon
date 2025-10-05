@@ -1,4 +1,5 @@
 # Axon
+- Branch `tensor/double`
 
 [**`AXON`**](https://github.com/51ddhesh/axon/) is a simple deep learning library in the process inspired from `PyTorch`.
 
@@ -17,6 +18,7 @@
 
 
 ### TODOs:
-- Port the [`Tensor` class](./include/tensor.hpp) to a `double`.
-- Add more datatypes in the `axon` namespace.
+[x] Port the [`Tensor` class](./include/tensor.hpp) to a `double`.
+[] Add more datatypes in the `axon` namespace.
+
 
