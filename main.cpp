@@ -16,6 +16,17 @@ int main() {
 
     auto i = t2 + t3;
     print(i);
+
+    i = t2 * t3;
+    print(i);
    
+    i = t2 - t3;
+    print(i);
+
+    t1 = {1.0, 2.0, 3.0, 4.0, 5.0};
+
+    axon::i64 dot_prod = dot(t1, t2);
+    std::cout << "The dot between t1 and t2 is: " << dot_prod << std::endl;
+
     return 0;
 }
