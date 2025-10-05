@@ -8,3 +8,5 @@
 ### Current Features:
 - Supports a `1D` `tensor` like `torch` with addition operation (overloaded `+` operator).
 
+> See sample usage in [main.cpp](./main.cpp)
+
