@@ -11,3 +11,12 @@
 
 > See sample usage in [main.cpp](./main.cpp)
 
+---
+
+**Current Idea**: Port the `Tensor` class to a `double` rather than a templated class. 
+
+
+### TODOs:
+- Port the [`Tensor` class](./include/tensor.hpp) to a `double`.
+- Add more datatypes in the `axon` namespace.
+
