@@ -8,7 +8,7 @@
 // ! TO REMOVE:
 // ! Causes errors with undefined references due to the templates
 // template <typename T, typename U>
-// axon::i64 dot(const Tensor<T>& a, const Tensor<U>& b) {
+// axon::i64 dot(const Tensor<double>& a, const Tensor<U>& b) {
 //     if (a.getData().size() != b.getData().size()) {
 //         throw std::range_error("The size of both Tensors must be the same");
 //     }
