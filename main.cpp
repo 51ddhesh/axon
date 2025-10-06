@@ -28,5 +28,14 @@ int main() {
     axon::i64 dot_prod = dot(t1, t2);
     std::cout << "The dot between t1 and t2 is: " << dot_prod << std::endl;
 
+    t1 = t1 + 5.0;
+    std::cout << "Adding 5.0 to t1: "; 
+    print(t1);
+
+    t1 = t1 - 2.0;
+    t1 = t1 * 1.5;
+    std::cout << "t1 = t1 - 2.0\nt1 = t1 * 1.5: ";
+    print(t1);
+
     return 0;
 }

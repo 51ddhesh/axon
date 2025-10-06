@@ -1,4 +1,4 @@
-// include/Tensor.hpp
+// include/tensor.hpp
 // github.com/51ddhesh
 // MIT License
 
@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <initializer_list>
+#include <iomanip>
 
 namespace axon {
     using i64 = long long;
@@ -25,74 +26,38 @@ public:
     
     Tensor() {}
 
-    const std::vector<double>& getData() const {
+    const inline std::vector<double>& getData() const {
         return this->data;
     }
 
-    void print_tensor() {
-        auto data = getData();
-        std::cout << "Tensor([";
-        for (auto i : data) {
-            std::cout << i << ',';
-        }
-        std::cout << "])" << std::endl;
+        inline size_t getSize() const {
+        return this->data.size();
     }
 
-    Tensor operator+(const Tensor& other) const {
-        if (getData().size() != other.getData().size()) {
-            throw std::range_error("Length of the Tensors must be same");
-        }
-        Tensor result(std::vector<double> (other.data.size(), 0));
-        for (size_t i = 0; i < other.data.size(); i++) {
-            result.data[i] = data[i] + other.data[i];
-        }
-        return result;
+    inline Tensor zeros(size_t size_) {
+        std::vector<double> t(size_, 0);
+        return Tensor(t);
     }
 
-    Tensor operator-(const Tensor& other) const {
-        if (getData().size() != other.getData().size()) {
-            throw std::range_error("Length of the Tensors must be same");
-        }
-        Tensor result(std::vector<double> (other.data.size(), 0));
-        for (size_t i = 0; i < other.data.size(); i++) {
-            result.data[i] = data[i] - other.data[i];
-        }
-        return result;
-    }
+    void print_tensor();
+
+    // Operations with other Tensors
+    Tensor operator+(const Tensor& other) const;
+
+    Tensor operator-(const Tensor& other) const;
     
-    Tensor operator*(const Tensor& other) const {
-        if (getData().size() != other.getData().size()) {
-            throw std::range_error("Length of the Tensors must be same");
-        }
-        Tensor result(std::vector<double> (other.data.size(), 0));
-        for (size_t i = 0; i < other.data.size(); i++) {
-            result.data[i] = data[i] * other.data[i];
-        }
-        return result;
-    }
+    Tensor operator*(const Tensor& other) const;
+
+    // Operations with scalars
+    Tensor operator+(const double val_) const;
+    
+    Tensor operator-(const double val_) const;
+    
+    Tensor operator*(const double val_) const;
 };
 
-void print(Tensor& t) {
-    auto data = t.getData();
-    std::cout << "Tensor([";
-    for (auto i : data) {
-        std::cout << i << ',';
-    }
-    std::cout << "])" << std::endl;
-}
+void print(const Tensor& t);
 
-axon::i64 dot(const Tensor& a, const Tensor& b) {
-    if (a.getData().size() != b.getData().size()) {
-        throw std::range_error("The size of both Tensors must be the same");
-    }
-    axon::i64 dot = 0;
-    size_t n = a.getData().size();
-    
-    for (size_t i = 0; i < n; i++) {
-        dot += int(double(a.getData()[i]) * double(b.getData()[i]));
-    }
-    
-    return dot;
-}
+axon::f64 dot(const Tensor& a, const Tensor& b); 
 
 #endif // AXON_TENSOR_HPP
