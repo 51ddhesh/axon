@@ -9,8 +9,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -O3)
 endif()
 
-add_executable(out 
+add_executable(ax
     ./main.cpp
-    ./include/tensor.hpp
-    ./src/tensor.cpp
+    src/tensor.cpp
 )
+
+target_include_directories(ax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
