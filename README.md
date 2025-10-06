@@ -7,7 +7,8 @@
 --- 
 
 ### Current Features:
-- Supports a `1D` `tensor` like `torch` with addition, subtraction and multiplication operation (overloaded `+`, '-', '*' operators).
+- Supports a `1D` `tensor` like `torch` with addition, subtraction and multiplication operation (overloaded `+`, `-`, `*` operators).
+- Supports operations between a `tensor` and scalars.
 - Super Basic `dot product` between two `vectors`.
 
 > See sample usage in [main.cpp](./main.cpp)
