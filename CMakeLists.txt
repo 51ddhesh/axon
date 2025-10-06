@@ -12,5 +12,5 @@ endif()
 add_executable(out 
     ./main.cpp
     ./include/tensor.hpp
-    # ./src/tensor.cpp
+    ./src/tensor.cpp
 )
