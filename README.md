@@ -7,7 +7,7 @@
 --- 
 
 ### Current Features:
-- Supports a `1D` `tensor` like `torch` with addition operation (overloaded `+` operator).
+- Supports a `1D` `tensor` like `torch` with addition, subtraction and multiplication operation (overloaded `+`, '-', '*' operators).
 - Super Basic `dot product` between two `vectors`.
 
 > See sample usage in [main.cpp](./main.cpp)
@@ -19,6 +19,6 @@
 
 ### TODOs:
 - [x] Port the [`Tensor` class](./include/tensor.hpp) to a `double`.
-- [] Add more datatypes in the `axon` namespace.
+- [x] Add more datatypes in the `axon` namespace (added `axon::i64` and `axon::f64`).
 
 
