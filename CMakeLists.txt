@@ -11,7 +11,9 @@ endif()
 
 add_executable(ax
     ./main.cpp
-    src/tensor.cpp
+    src/tensor_core.cpp
+    src/tensor_ops.cpp
+    src/tensor_utils.cpp
 )
 
 target_include_directories(ax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
