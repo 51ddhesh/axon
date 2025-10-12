@@ -2,40 +2,39 @@
 
 
 int main() {
-    Tensor t1({1.0, 2.0, 3.0, 4.0});
-    Tensor t2 = {1, 2, 3, 4, 5};   
-    std::vector<double> v = {1, 2, 3, 4, 5};
-    Tensor t3(v);
+    // Tensor t = Tensor::zeros(2, 2);
+    // print(t);
+
+    // Tensor a({{1, 2}, {3, 4}});
+    // Tensor b({{4, 2}, {1, 4}});
+
+    // print(a + b);
+    // print(a - b);
+
+    // Tensor c(1, 1);
+    // print(c);
     
-    std::cout << "Tensor t1: ";
-    print(t1);
-    std::cout << "Tensor t2: ";
-    t2.print_tensor();
-    std::cout << "Tensor t3: ";
-    print(t3);
+    // c = c - 1;
+    // print(c);
 
-    auto i = t2 + t3;
-    print(i);
+    // c = c * 5;
+    // c += 10;
+    // print(c);
 
-    i = t2 * t3;
-    print(i);
-   
-    i = t2 - t3;
-    print(i);
+    Tensor a(1, 1);
+    Tensor b(1, 1);
+    a = a + 1;
+    b = b + 2;
+    Tensor c = a + b;
+    print(c);
+    c += a;
+    print(c);
 
-    t1 = {1.0, 2.0, 3.0, 4.0, 5.0};
+    c += 5;
+    print(c);
 
-    axon::i64 dot_prod = dot(t1, t2);
-    std::cout << "The dot between t1 and t2 is: " << dot_prod << std::endl;
+    print(Tensor(4, 4, 0.5));
 
-    t1 = t1 + 5.0;
-    std::cout << "Adding 5.0 to t1: "; 
-    print(t1);
-
-    t1 = t1 - 2.0;
-    t1 = t1 * 1.5;
-    std::cout << "t1 = t1 - 2.0\nt1 = t1 * 1.5: ";
-    print(t1);
 
     return 0;
 }
