@@ -1,4 +1,4 @@
-// include/tensor.hpp
+// include/Tensor.hpp
 // github.com/51ddhesh
 // MIT License
 
@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <initializer_list>
-#include <iomanip>
+#include <assert.h>
 
 namespace axon {
     using i64 = long long;
@@ -18,35 +18,74 @@ namespace axon {
 class Tensor {
 private:
     std::vector<double> data;
+    std::vector<size_t> shape;
     
 public:
-    Tensor(std::initializer_list<double> init_list) : data(init_list) {}
 
-    Tensor(const std::vector<double>& vec) : data(std::move(vec)) {}
-    
-    Tensor() {}
+    // * Constructors
 
-    const inline std::vector<double>& getData() const {
+    // Default Constructor
+    Tensor();
+    // Init a Tensor with given rows and columns
+    Tensor(size_t rows, size_t cols);
+    // Init a Tensor with given rows and columns and values
+    Tensor(size_t rows, size_t cols, double init_val);
+    // Init a 1D Tensor with a `initializer_list`
+    Tensor(std::initializer_list<double> init_list);
+    // Init a 2D Tensor with a `initializer_list`
+    Tensor(std::initializer_list<std::initializer_list<double>> init_list);
+
+
+    // * Getters
+
+    // Fetch data
+    const std::vector<double>& getData() const {
         return this->data;
     }
 
-        inline size_t getSize() const {
-        return this->data.size();
+    // Fetch shape
+    const std::vector<size_t>& getShape() const {
+        return this->shape;
     }
 
-    inline Tensor zeros(size_t size_) {
-        std::vector<double> t(size_, 0);
-        return Tensor(t);
+    // Fetch rows
+    size_t rows() const {
+        return shape.empty() ? 0 : shape[0];
     }
+
+    // Fetch columns
+    size_t cols() const {
+        return shape.size() < 2 ? 0 : shape[1];
+    }
+
+
+    // * Accessor Operator Overloads
+
+    // Non-`const` accessor to modify elements
+    double& operator() (size_t rows_, size_t cols_);
+
+    // `const` accessor to perform read-only operations
+    const double& operator() (size_t rows_, size_t cols_) const;
+
+    // * Static factory methods similar to `numpy` and `torch`
+
+    // Function similar to numpy.zeros 
+    static Tensor zeros(size_t rows, size_t cols);
+
+    // * IO
 
     void print_tensor();
 
-    // Operations with other Tensors
+    // * Tensor Ops
+
+    // Operations with other Tensors (Element wise)
     Tensor operator+(const Tensor& other) const;
 
     Tensor operator-(const Tensor& other) const;
     
     Tensor operator*(const Tensor& other) const;
+
+    Tensor operator/(const Tensor& other) const;
 
     // Operations with scalars
     Tensor operator+(const double val_) const;
@@ -54,10 +93,27 @@ public:
     Tensor operator-(const double val_) const;
     
     Tensor operator*(const double val_) const;
+
+    Tensor operator/(const double val_) const;
+
+    // Compound Operations 
+    // Element wise
+    Tensor operator+=(const Tensor& other);
+    Tensor operator-=(const Tensor& other);
+    Tensor operator*=(const Tensor& other);
+    Tensor operator/=(const Tensor& other);
+    // Ops witch scalars 
+    Tensor operator+=(const double val_);
+    Tensor operator-=(const double val_);
+    Tensor operator*=(const double val_);
+    Tensor operator/=(const double val_);
+
 };
+
 
 void print(const Tensor& t);
 
-axon::f64 dot(const Tensor& a, const Tensor& b); 
+// TODO: Implement the dot product and matmul
+// axon::f64 dot(const Tensor& a, const Tensor& b); 
 
 #endif // AXON_TENSOR_HPP
