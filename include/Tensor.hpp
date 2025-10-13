@@ -17,7 +17,7 @@ namespace axon {
 
 class Tensor {
 private:
-    std::vector<double> data;
+    std::vector<axon::f64> data;
     std::vector<size_t> shape;
     
 public:
@@ -58,6 +58,9 @@ public:
         return shape.size() < 2 ? 0 : shape[1];
     }
 
+    size_t get_size() const {
+        return this -> data.size();
+    }
 
     // * Accessor Operator Overloads
 
@@ -124,7 +127,12 @@ public:
 
 void print(const Tensor& t);
 
+axon::f64 frobenius_inner_product(const Tensor& a, const Tensor& b);
+
 // TODO: Implement the dot product and matmul
-// axon::f64 dot(const Tensor& a, const Tensor& b); 
+axon::f64 dot(const Tensor& a, const Tensor& b); 
+
+// TODO:
+Tensor matmul(const Tensor& a, const Tensor& b);
 
 #endif // AXON_TENSOR_HPP

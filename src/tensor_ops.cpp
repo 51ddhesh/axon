@@ -168,3 +168,43 @@ Tensor Tensor::operator/=(const double val_) {
     return *this;
 }
 
+// axon::f64 dot(const Tensor& a, const Tensor& b) {
+//     if (!(a.getShape() == b.getShape() && a.rows() == b.rows() && a.cols() == b.cols())) {
+//         throw std::invalid_argument("The shape of the two tensors must match");
+//     }
+//     axon::f64 dot_result = 0;
+//     for (size_t i = 0; i < a.getData().size(); i++) {
+//         dot_result += a.getData()[i] * b.getData()[i];
+//     }
+//     return dot_result;
+// }
+
+
+axon::f64 frobenius_inner_product(const Tensor& a, const Tensor& b) {
+    if (a.getShape() != b.getShape()) {
+        throw std::invalid_argument("The shape must match for Frobenius Inner Product");
+    }
+
+    axon::f64 result = 0.0;
+    for (size_t i = 0; i < a.get_size(); i++) {
+        result += a.getData()[i] * b.getData()[i];
+    }
+
+    return result;
+}
+
+
+axon::f64 dot(const Tensor& a, const Tensor& b) {
+    if (a.get_size() != b.get_size()) {
+        throw std::invalid_argument("The number of elements must be same for both Tensors to perform a dot product");
+    }
+    axon::f64 result = 0.0;
+
+    for (size_t i = 0; i < a.get_size(); i++) {
+        result += a.getData()[i] * b.getData()[i];
+    }
+
+    return result;
+}
+
+

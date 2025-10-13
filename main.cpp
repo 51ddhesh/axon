@@ -43,5 +43,7 @@ int main() {
     t = Tensor::zeros(2, 2);
     print(t);
 
+    
+
     return 0;
 }
