@@ -72,6 +72,17 @@ public:
     // Function similar to numpy.zeros 
     static Tensor zeros(size_t rows, size_t cols);
 
+    // Function similar to numpy.ones
+    static Tensor ones(size_t rows_, size_t cols_);
+
+    // Get a random-valued (between 0 and 1 by default) Tensor
+    static Tensor randn(size_t rows_, size_t cols_);
+    static Tensor randn(size_t rows_, size_t cols_, double min_, double max_);
+
+    // Get a random-valued (between -1000 and 1000 by default) Tensor (integer-valued)
+    static Tensor randint(size_t rows_, size_t cols_);
+    static Tensor randint(size_t rows_, size_t cols_, int min_, int max_);
+
     // * IO
 
     void print_tensor();
