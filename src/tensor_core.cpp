@@ -7,52 +7,72 @@
 #include <numeric>
 
 // Default Constructor
-Tensor::Tensor() : data(), shape({0, 0}) {}
-
-Tensor::Tensor(size_t rows_, size_t cols_) : shape({rows_, cols_}) {
-    data.resize(rows_ * cols_, 0.0);
+Tensor::Tensor() : _data(), _shape({0, 0}) {
+    compute_strides();
 }
 
-Tensor::Tensor(size_t rows_, size_t cols_, double init_val) : shape({rows_, cols_}) {
-    data.resize(rows_ * cols_, init_val);
+Tensor::Tensor(size_t rows_, size_t cols_) : _shape({rows_, cols_}) {
+    _data.resize(rows_ * cols_, 0.0);
+    compute_strides();
+}
+
+Tensor::Tensor(size_t rows_, size_t cols_, double init_val) : _shape({rows_, cols_}) {
+    _data.resize(rows_ * cols_, init_val);
+    compute_strides();
 }
 
 Tensor::Tensor(std::initializer_list<double> init_list) {
-    shape = {1, init_list.size()};
-    data = init_list;
+    _shape = {1, init_list.size()};
+    _data = init_list;
+    compute_strides();
 }
 
 Tensor::Tensor(std::initializer_list<std::initializer_list<double>> init_list) {
     if (init_list.size() == 0 || init_list.begin() -> size() == 0) {
-        shape = {0, 0};
+        _shape = {0, 0};
         return;
     }
 
     size_t rows_ = init_list.size();
     size_t cols_ = init_list.begin() -> size();
 
-    shape = {rows_, cols_};
-    data.reserve(rows_ * cols_);
+    _shape = {rows_, cols_};
+    _data.reserve(rows_ * cols_);
 
     for (const auto& row_list : init_list) {
         if (row_list.size() != cols_) {
             throw std::invalid_argument("All rows in init_list must have same size.");
         }
-        data.insert(data.end(), row_list.begin(), row_list.end());
+        _data.insert(_data.end(), row_list.begin(), row_list.end());
+    }
+
+    compute_strides();
+}
+
+void Tensor::compute_strides() {
+    if (_shape.empty()) {
+        _strides.clear();
+        return;
+    }
+    _strides.resize(_shape.size());
+    _strides.back() = 1;
+    for (int i = _shape.size() - 2; i >= 0; i--) {
+        _strides[i] = _strides[i + 1] * _shape[i + 1];
     }
 }
+
 
 double& Tensor::operator() (size_t row_, size_t col_) {
     if (row_ >= rows() || col_ >= cols()) {
         throw std::out_of_range("Tensor index out of range");
     }
-    return data[row_ * cols() + col_];
+    return _data[row_ * _strides[0] + col_ * _strides[1]];
 }
 
 const double& Tensor::operator() (size_t row_, size_t col_) const {
     if (row_ >= rows() || col_ >= cols()) {
         throw std::out_of_range("Tensor index out of range");
     }
-    return data[row_ * cols() + col_];
+    return _data[row_ * _strides[0] + col_ * _strides[1]];
 }
 

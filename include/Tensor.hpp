@@ -17,9 +17,12 @@ namespace axon {
 
 class Tensor {
 private:
-    std::vector<axon::f64> data;
-    std::vector<size_t> shape;
-    
+    std::vector<axon::f64> _data;
+    std::vector<size_t> _shape;
+    std::vector<size_t> _strides;
+
+    void compute_strides();
+
 public:
 
     // * Constructors
@@ -40,27 +43,35 @@ public:
 
     // Fetch data
     const std::vector<double>& getData() const {
-        return this->data;
+        return this -> _data;
     }
 
     // Fetch shape
     const std::vector<size_t>& getShape() const {
-        return this->shape;
+        return this -> _shape;
     }
 
     // Fetch rows
     size_t rows() const {
-        return shape.empty() ? 0 : shape[0];
+        return _shape.empty() ? 0 : _shape[0];
     }
 
     // Fetch columns
     size_t cols() const {
-        return shape.size() < 2 ? 0 : shape[1];
+        return _shape.size() < 2 ? 0 : _shape[1];
     }
 
+    // Get size
     size_t get_size() const {
-        return this -> data.size();
+        return this -> _data.size();
     }
+
+    // Get the strides
+    const std::vector<size_t> get_strides() const {
+        return this -> _strides;
+    }
+
+
 
     // * Accessor Operator Overloads
 
@@ -73,7 +84,7 @@ public:
     // * Static factory methods similar to `numpy` and `torch`
 
     // Function similar to numpy.zeros 
-    static Tensor zeros(size_t rows, size_t cols);
+    static Tensor zeros(size_t rows_, size_t cols_);
 
     // Function similar to numpy.ones
     static Tensor ones(size_t rows_, size_t cols_);
@@ -85,6 +96,10 @@ public:
     // Get a random-valued (between -1000 and 1000 by default) Tensor (integer-valued)
     static Tensor randint(size_t rows_, size_t cols_);
     static Tensor randint(size_t rows_, size_t cols_, int min_, int max_);
+
+    // Transpose
+    static Tensor T(const Tensor& a);
+
 
     // * IO
 
@@ -129,10 +144,9 @@ void print(const Tensor& t);
 
 axon::f64 frobenius_inner_product(const Tensor& a, const Tensor& b);
 
-// TODO: Implement the dot product and matmul
 axon::f64 dot(const Tensor& a, const Tensor& b); 
 
 // TODO:
-Tensor matmul(const Tensor& a, const Tensor& b);
+// Tensor matmul(const Tensor& a, const Tensor& b);
 
 #endif // AXON_TENSOR_HPP
