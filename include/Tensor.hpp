@@ -146,7 +146,6 @@ axon::f64 frobenius_inner_product(const Tensor& a, const Tensor& b);
 
 axon::f64 dot(const Tensor& a, const Tensor& b); 
 
-// TODO:
-// Tensor matmul(const Tensor& a, const Tensor& b);
+Tensor matmul(const Tensor& a, const Tensor& b);
 
 #endif // AXON_TENSOR_HPP
