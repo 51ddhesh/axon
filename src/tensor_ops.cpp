@@ -12,8 +12,8 @@ Tensor Tensor::operator+ (const Tensor& other_) const {
         throw std::invalid_argument("The shapes of the two tensors must match");
     }
     Tensor result(rows(), cols());
-    for (size_t i = 0; i < data.size(); i++) {
-        result.data[i] = this -> data[i] + other_.data[i];
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        result._data[i] = this -> _data[i] + other_._data[i];
     }
     return result;
 }
@@ -24,8 +24,8 @@ Tensor Tensor::operator- (const Tensor& other_) const {
         throw std::invalid_argument("The shapes of the two tensors must match");
     }
     Tensor result(rows(), cols());
-    for (size_t i = 0; i < data.size(); i++) {
-        result.data[i] = this -> data[i] - other_.data[i];
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        result._data[i] = this -> _data[i] - other_._data[i];
     }
     return result;
 }
@@ -37,8 +37,8 @@ Tensor Tensor::operator* (const Tensor& other_) const {
         throw std::invalid_argument("The shapes of the two tensors must match");
     }
     Tensor result(rows(), cols());
-    for (size_t i = 0; i < data.size(); i++) {
-        result.data[i] = this -> data[i] * other_.data[i];
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        result._data[i] = this -> _data[i] * other_._data[i];
     }
     return result;
 }
@@ -49,8 +49,8 @@ Tensor Tensor::operator/ (const Tensor& other_) const {
         throw std::invalid_argument("The shapes of the two tensors must match");
     }
     Tensor result(rows(), cols());
-    for (size_t i = 0; i < data.size(); i++) {
-        result.data[i] = this -> data[i] / other_.data[i];
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        result._data[i] = this -> _data[i] / other_._data[i];
     }
     return result;
 }
@@ -60,8 +60,8 @@ Tensor Tensor::operator/ (const Tensor& other_) const {
 // Scalar Addition
 Tensor Tensor::operator+ (const double val_) const {
     Tensor result(this -> rows(), this -> cols());
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        result.data[i] = this -> data[i] + val_;
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        result._data[i] = this -> _data[i] + val_;
     }
     return result;
 }
@@ -69,8 +69,8 @@ Tensor Tensor::operator+ (const double val_) const {
 // Scalar Subtraction
 Tensor Tensor::operator- (const double val_) const {
     Tensor result(this -> rows(), this -> cols());
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        result.data[i] = this -> data[i] - val_;
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        result._data[i] = this -> _data[i] - val_;
     }
     return result;
 }
@@ -78,8 +78,8 @@ Tensor Tensor::operator- (const double val_) const {
 // Scalar Multiplication
 Tensor Tensor::operator* (const double val_) const {
     Tensor result(this -> rows(), this -> cols());
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        result.data[i] = this -> data[i] * val_;
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        result._data[i] = this -> _data[i] * val_;
     }
     return result;
 }
@@ -88,8 +88,8 @@ Tensor Tensor::operator* (const double val_) const {
 Tensor Tensor::operator/ (const double val_) const {
     assert(val_ != 0.0);
     Tensor result(this -> rows(), this -> cols());
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        result.data[i] = this -> data[i] / val_;
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        result._data[i] = this -> _data[i] / val_;
     }
     return result;
 }
@@ -101,8 +101,8 @@ Tensor Tensor::operator+=(const Tensor& other_) {
     if (this -> getShape() != other_.getShape()) {
         throw std::invalid_argument("The shape of the two tensors must match");
     }
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        this -> data[i] += other_.data[i];
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        this -> _data[i] += other_._data[i];
     }
     return *this;
 }
@@ -111,8 +111,8 @@ Tensor Tensor::operator-=(const Tensor& other_) {
     if (this -> getShape() != other_.getShape()) {
         throw std::invalid_argument("The shape of the two tensors must match");
     }
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        this -> data[i] -= other_.data[i];
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        this -> _data[i] -= other_._data[i];
     }
     return *this;
 }
@@ -121,8 +121,8 @@ Tensor Tensor::operator*=(const Tensor& other_) {
     if (this -> getShape() != other_.getShape()) {
         throw std::invalid_argument("The shape of the two tensors must match");
     }
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        this -> data[i] *= other_.data[i];
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        this -> _data[i] *= other_._data[i];
     }
     return *this;
 }
@@ -131,39 +131,39 @@ Tensor Tensor::operator/=(const Tensor& other_) {
     if (this -> getShape() != other_.getShape()) {
         throw std::invalid_argument("The shape of the two tensors must match");
     }
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        assert(other_.data[i] != 0.0);
-        this -> data[i] /= other_.data[i];
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        assert(other_._data[i] != 0.0);
+        this -> _data[i] /= other_._data[i];
     }
     return *this;
 }
 
 
 Tensor Tensor::operator+=(const double val_) {
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        this -> data[i] += val_;
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        this -> _data[i] += val_;
     }
     return *this;
 }
 
 Tensor Tensor::operator-=(const double val_) {
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        this -> data[i] -= val_;
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        this -> _data[i] -= val_;
     }
     return *this;
 }
 
 Tensor Tensor::operator*=(const double val_) {
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        this -> data[i] *= val_;
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        this -> _data[i] *= val_;
     }
     return *this;
 }
 
 Tensor Tensor::operator/=(const double val_) {
     assert(val_ != 0.0);
-    for (size_t i = 0; i < this -> data.size(); i++) {
-        this -> data[i] /= val_;
+    for (size_t i = 0; i < this -> _data.size(); i++) {
+        this -> _data[i] /= val_;
     }
     return *this;
 }
@@ -207,4 +207,18 @@ axon::f64 dot(const Tensor& a, const Tensor& b) {
     return result;
 }
 
+// Tensor matmul(const Tensor& a, const Tensor& b) {
+//     size_t a_rows = a.rows();
+//     size_t a_cols = a.cols();
+//     size_t b_rows = b.rows();
+//     size_t b_cols = b.cols();
+
+//     if (a_cols != b_rows) {
+//         throw std::invalid_argument("The columns in the first Tensor must match the rows in the second Tensor");
+//     } 
+
+//     Tensor result(a_rows, b_cols);
+
+
+// }
 
