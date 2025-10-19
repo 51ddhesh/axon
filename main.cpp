@@ -34,15 +34,28 @@ int main() {
 
     // print(Tensor(4, 4, 0.5));
 
-    Tensor t = Tensor::randn(2, 2, 0, 5);
-    print(t);
+    // Tensor t = Tensor::randn(2, 2, 0, 5);
+    // print(t);
 
-    t = Tensor::ones(2, 2);
-    print(t);
+    // t = Tensor::ones(2, 2);
+    // print(t);
 
-    t = Tensor::zeros(2, 2);
-    print(t);
+    // t = Tensor::zeros(2, 2);
+    // print(t);
 
+
+
+    Tensor a = Tensor::randn(3, 4, 0, 10);
+    Tensor b = Tensor::randn(4, 3, 0, 10);
+    std::cout << "Matrix A:" << std::endl;
+    print(a);
+
+    std::cout << "Matrix B:" << std::endl;
+    print(b);
+
+    Tensor a_b = matmul(a, b);
+    std::cout << "A * B" << std::endl;
+    print(a_b);
 
     return 0;
 }

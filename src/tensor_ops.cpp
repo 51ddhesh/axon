@@ -168,18 +168,6 @@ Tensor Tensor::operator/=(const double val_) {
     return *this;
 }
 
-// axon::f64 dot(const Tensor& a, const Tensor& b) {
-//     if (!(a.getShape() == b.getShape() && a.rows() == b.rows() && a.cols() == b.cols())) {
-//         throw std::invalid_argument("The shape of the two tensors must match");
-//     }
-//     axon::f64 dot_result = 0;
-//     for (size_t i = 0; i < a.getData().size(); i++) {
-//         dot_result += a.getData()[i] * b.getData()[i];
-//     }
-//     return dot_result;
-// }
-
-
 axon::f64 frobenius_inner_product(const Tensor& a, const Tensor& b) {
     if (a.getShape() != b.getShape()) {
         throw std::invalid_argument("The shape must match for Frobenius Inner Product");
@@ -207,18 +195,28 @@ axon::f64 dot(const Tensor& a, const Tensor& b) {
     return result;
 }
 
-// Tensor matmul(const Tensor& a, const Tensor& b) {
-//     size_t a_rows = a.rows();
-//     size_t a_cols = a.cols();
-//     size_t b_rows = b.rows();
-//     size_t b_cols = b.cols();
+// cache-friendly matmul
+Tensor matmul(const Tensor& a, const Tensor& b) {
+    if (a.cols() != b.rows()) {
+        throw std::invalid_argument("Matrix dimensions are not compatible for multiplication.");
+    }
 
-//     if (a_cols != b_rows) {
-//         throw std::invalid_argument("The columns in the first Tensor must match the rows in the second Tensor");
-//     } 
+    size_t a_rows = a.rows();
+    size_t a_cols = a.cols(); // shared dim
+    size_t b_cols = b.cols();
 
-//     Tensor result(a_rows, b_cols);
+    Tensor result = Tensor::zeros(a_rows, b_cols);
 
+    // cache friendly loop
+    for (size_t i = 0; i < a_rows; ++i) {
+        for (size_t k = 0; k < a_cols; ++k) {
+            // Fetch a(i, k) once and reuse it across the inner loop
+            double a_val = a(i, k); 
+            for (size_t j = 0; j < b_cols; ++j) {
+                result(i, j) += a_val * b(k, j);
+            }
+        }
+    }
 
-// }
-
+    return result;
+}
