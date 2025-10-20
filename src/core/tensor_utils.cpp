@@ -2,8 +2,8 @@
 // github.com/51ddhesh
 // MIT License
 
-#include "../include/Tensor.hpp"
-#include "../utils/random_.hpp"
+#include "../../include/Tensor.hpp"
+#include "../../utils/random_.hpp"
 #include <iomanip>
 
 void Tensor::print_tensor() {
@@ -41,38 +41,40 @@ Tensor Tensor::ones(size_t rows_, size_t cols_) {
     return Tensor(rows_, cols_, 1.0);
 }
 
-Tensor Tensor::randn(size_t rows_, size_t cols_) {
-    double min_ = 0.0;
-    double max_ = 1.0;
-    Tensor random_tensor_(rows_, cols_);
-    for (size_t i = 0; i < random_tensor_._data.size(); i++) {
-        random_tensor_._data[i] = axon_random::random_double(min_, max_);
-    }
-    return random_tensor_;
-}
-
-Tensor Tensor::randn(size_t rows_, size_t cols_, double min_ = 0.0, double max_ = 1.0) {
-    Tensor random_tensor_(rows_, cols_);
-    for (size_t i = 0; i < random_tensor_._data.size(); i++) {
-        random_tensor_._data[i] = axon_random::random_double(min_, max_);
-    }
-    return random_tensor_;
-}
-
 Tensor Tensor::randint(size_t rows_, size_t cols_) {
     int min_ = -1000;
     int max_ = 1000;
     Tensor random_int_tensor(rows_, cols_);
     for (size_t i = 0; i < random_int_tensor._data.size(); i++) {
-        random_int_tensor._data[i] = axon_random::random_double(min_, max_);
+        random_int_tensor(i) = axon_random::random_int(min_, max_);
     }
     return random_int_tensor;
 }
 
-Tensor Tensor::randint(size_t rows_, size_t cols_, int min_ = -1000, int max_ = 1000) {
+Tensor Tensor::randint(size_t rows_, size_t cols_, std::vector<axon_dtype::i32> limits_) {
+    assert(limits_.size() == 2);
     Tensor random_int_tensor(rows_, cols_);
     for (size_t i = 0; i < random_int_tensor._data.size(); i++) {
-        random_int_tensor._data[i] = axon_random::random_double(min_, max_);
+        random_int_tensor(i) = axon_random::random_int(limits_[0], limits_[1]);
     }
     return random_int_tensor;
 }
+
+Tensor Tensor::randn(size_t rows_, size_t cols_, std::vector<axon_dtype::f64> limits_) {
+    assert(limits_.size() == 2);
+    Tensor random_tensor(rows_, cols_);
+    for (size_t i = 0; i < random_tensor.get_size(); i++) {
+        random_tensor(i) = axon_random::random_double(limits_[0], limits_[1]);
+    }
+    return random_tensor;
+}
+
+Tensor Tensor::randn(size_t rows_, size_t cols_) {
+    axon_dtype::f64 min_ = 0.0, max_ = 1.0;
+    Tensor random_tensor(rows_, cols_);
+    for (size_t i = 0; i < random_tensor.get_size(); i++) {
+        random_tensor(i) = axon_random::random_double(min_, max_);
+    }
+    return random_tensor;
+}
+
