@@ -1,4 +1,5 @@
 #include "include/Tensor.hpp"
+#include "include/Activations.hpp"
 
 int main() {
     // Tensor t = Tensor::zeros(2, 2);
@@ -43,19 +44,18 @@ int main() {
     // t = Tensor::zeros(2, 2);
     // print(t);
 
+    // std::cout << "Matrix B:" << std::endl;
+    // print(b);
 
+    // Tensor a_b = matmul(a, b);
+    // std::cout << "A * B" << std::endl;
+    // print(a_b);
 
-    Tensor a = Tensor::randn(3, 4, 0, 10);
-    Tensor b = Tensor::randn(4, 3, 0, 10);
-    std::cout << "Matrix A:" << std::endl;
-    print(a);
-
-    std::cout << "Matrix B:" << std::endl;
+    Tensor b = Tensor::randn(3, 4, {2, 4});
     print(b);
 
-    Tensor a_b = matmul(a, b);
-    std::cout << "A * B" << std::endl;
-    print(a_b);
+    Tensor a = Tensor::randint(3, 4, {100, 120});
+    print(a);
 
     return 0;
 }

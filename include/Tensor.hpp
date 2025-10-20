@@ -10,14 +10,15 @@
 #include <initializer_list>
 #include <assert.h>
 
-namespace axon {
+namespace axon_dtype {
+    using i32 = int;
     using i64 = long long;
     using f64 = double;
 }
 
 class Tensor {
 private:
-    std::vector<axon::f64> _data;
+    std::vector<axon_dtype::f64> _data;
     std::vector<size_t> _shape;
     std::vector<size_t> _strides;
 
@@ -81,6 +82,13 @@ public:
     // `const` accessor to perform read-only operations
     const double& operator() (size_t rows_, size_t cols_) const;
 
+    // Operator to modify element with its index, directly from this -> _data
+    double& operator() (size_t index_);
+
+    // Operator to get a const, non-mutable reference with its index in this -> _data
+    const double& operator() (size_t index_) const;
+    
+    
     // * Static factory methods similar to `numpy` and `torch`
 
     // Function similar to numpy.zeros 
@@ -90,15 +98,15 @@ public:
     static Tensor ones(size_t rows_, size_t cols_);
 
     // Get a random-valued (between 0 and 1 by default) Tensor
+    static Tensor randn(size_t rows_, size_t cols_, std::vector<axon_dtype::f64> limits_);
     static Tensor randn(size_t rows_, size_t cols_);
-    static Tensor randn(size_t rows_, size_t cols_, double min_, double max_);
 
     // Get a random-valued (between -1000 and 1000 by default) Tensor (integer-valued)
     static Tensor randint(size_t rows_, size_t cols_);
-    static Tensor randint(size_t rows_, size_t cols_, int min_, int max_);
+    static Tensor randint(size_t rows_, size_t cols_, std::vector<axon_dtype::i32> limits_);
 
     // Transpose
-    static Tensor T(const Tensor& a);
+    static Tensor T();
 
 
     // * IO
@@ -142,9 +150,9 @@ public:
 
 void print(const Tensor& t);
 
-axon::f64 frobenius_inner_product(const Tensor& a, const Tensor& b);
+axon_dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b);
 
-axon::f64 dot(const Tensor& a, const Tensor& b); 
+axon_dtype::f64 dot(const Tensor& a, const Tensor& b); 
 
 Tensor matmul(const Tensor& a, const Tensor& b);
 
