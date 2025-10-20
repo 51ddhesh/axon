@@ -16,12 +16,12 @@ namespace axon_random {
         return engine;
     }
 
-    inline double random_double(double min_ = 0.0, double max_ = 1.0) {
+    inline double random_double(double min_, double max_) {
         std::uniform_real_distribution<double> dist(min_, max_);
         return dist(get_engine());
     }
 
-    inline double random_int(double min_ = 0, double max_ = 1000) {
+    inline double random_int(double min_, double max_) {
         std::uniform_int_distribution<int> dist(min_, max_);
         double random_int = static_cast<double> (dist(get_engine()));
         return random_int;

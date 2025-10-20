@@ -2,7 +2,7 @@
 // github.com/51ddhesh
 // MIT License
 
-#include "../include/Tensor.hpp"
+#include "../../include/Tensor.hpp"
 #include <stdexcept>
 #include <numeric>
 
@@ -61,7 +61,6 @@ void Tensor::compute_strides() {
     }
 }
 
-
 double& Tensor::operator() (size_t row_, size_t col_) {
     if (row_ >= rows() || col_ >= cols()) {
         throw std::out_of_range("Tensor index out of range");
@@ -74,5 +73,19 @@ const double& Tensor::operator() (size_t row_, size_t col_) const {
         throw std::out_of_range("Tensor index out of range");
     }
     return _data[row_ * _strides[0] + col_ * _strides[1]];
+}
+
+double& Tensor::operator() (size_t index_) {
+    if (index_ >= this -> get_size()) {
+        throw std::out_of_range("Index out of range");
+    }
+    return _data[index_];
+}
+
+const double& Tensor::operator() (size_t index_) const {
+    if (index_ >= this -> get_size()) {
+        throw std::out_of_range("Index out of range");
+    }
+    return _data[index_];
 }
 
