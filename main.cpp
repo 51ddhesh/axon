@@ -54,8 +54,10 @@ int main() {
     Tensor b = Tensor::randn(3, 4, {2, 4});
     print(b);
 
-    Tensor a = Tensor::randint(3, 4, {100, 120});
-    print(a);
+    print(b.T());
+
+    // Tensor a = Tensor::randint(3, 4, {100, 120});
+    // print(a);
 
     return 0;
 }
