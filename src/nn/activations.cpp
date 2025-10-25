@@ -24,6 +24,7 @@ Tensor axon_activation::tanh(const Tensor& input) {
     return result;
 }
 
-Tensor axon_activation::softmax(const Tensor& input, size_t dim) {
-        
-}
+// TODO:
+// Tensor axon_activation::softmax(const Tensor& input, size_t dim) {
+// 
+// }

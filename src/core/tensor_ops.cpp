@@ -221,10 +221,14 @@ Tensor matmul(const Tensor& a, const Tensor& b) {
     return result;
 }
 
-
 // Transpose
-// TODO:
-Tensor Tensor::T() {
-    
+Tensor Tensor::T() const {
+    Tensor result(cols(), rows());
+    for (size_t i = 0; i < rows(); i++) {
+        for (size_t j = 0; j < cols(); j++) {
+            result(j, i) = (*this)(i, j);
+        }
+    }
+    return result;
 }
 

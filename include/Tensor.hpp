@@ -106,7 +106,7 @@ public:
     static Tensor randint(size_t rows_, size_t cols_, std::vector<axon_dtype::i32> limits_);
 
     // Transpose
-    static Tensor T();
+    Tensor T() const;
 
 
     // * IO
