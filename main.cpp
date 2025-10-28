@@ -21,22 +21,21 @@ int main() {
     // c += 10;
     // print(c);
 
-    // Tensor a(1, 1);
-    // Tensor b(1, 1);
-    // a = a + 1;
-    // b = b + 2;
-    // Tensor c = a + b;
-    // print(c);
-    // c += a;
-    // print(c);
+    // Tensor A(1, 1);
+    // Tensor B(1, 1);
+    // A = A + 1;
+    // B = B + 2;
+    
+    // Tensor C = A + B;
 
-    // c += 5;
-    // print(c);
+    // print(C);
+    // C += A;
+    // print(C);
+
+    // C += 5;
+    // print(C);
 
     // print(Tensor(4, 4, 0.5));
-
-    // Tensor t = Tensor::randn(2, 2, 0, 5);
-    // print(t);
 
     // t = Tensor::ones(2, 2);
     // print(t);
@@ -51,13 +50,13 @@ int main() {
     // std::cout << "A * B" << std::endl;
     // print(a_b);
 
-    Tensor b = Tensor::randn(3, 4, {2, 4});
-    print(b);
+    // Tensor X = Tensor::randn(3, 4, {2, 4});
+    // print(X);
 
-    print(b.T());
+    // print(X.T());
 
-    // Tensor a = Tensor::randint(3, 4, {100, 120});
-    // print(a);
+    // Tensor Y = Tensor::randint(3, 4, {100, 120});
+    // print(Y);
 
     return 0;
 }
