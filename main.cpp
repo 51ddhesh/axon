@@ -58,5 +58,11 @@ int main() {
     // Tensor Y = Tensor::randint(3, 4, {100, 120});
     // print(Y);
 
+    // Tensor softmax_test = Tensor::randn(3, 4);
+    // print(softmax_test);
+
+    // Tensor softmaxed_ = axon_activation::softmax(softmax_test);
+    // print(softmaxed_);
+
     return 0;
 }
