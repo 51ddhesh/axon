@@ -17,7 +17,7 @@ namespace axon_activation {
 
     Tensor tanh(const Tensor& input);
 
-    Tensor softmax(const Tensor& input, size_t dim);
+    Tensor softmax(const Tensor& input);
 }
 
 #endif // AXON_ACTIVATION_HPP

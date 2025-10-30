@@ -1,5 +1,5 @@
 # Axon
-- Branch `tensor/double`
+- Branch `master`
 
 [**`AXON`**](https://github.com/51ddhesh/axon/) is a simple header-only deep learning library in the process inspired from `PyTorch`.
 
@@ -46,7 +46,7 @@ The creates an executable `ax` in `build/`
 
 
 ## TODOs:
-- [ ] Implement softmax in `src/nn/`
+- [x] Implement softmax in `src/nn/`
 - [ ] Implement Transpose in `src/core/tensor_ops.cpp`
 
 

@@ -24,7 +24,26 @@ Tensor axon_activation::tanh(const Tensor& input) {
     return result;
 }
 
-// TODO:
-// Tensor axon_activation::softmax(const Tensor& input, size_t dim) {
-// 
-// }
+Tensor axon_activation::softmax(const Tensor& input) {
+    Tensor result = input;
+    for (size_t i = 0; i < result.rows(); i++) {
+        double max_from_row = -INFINITY;
+        // Find the max from each row to subtract from each element of the row
+        for (size_t j = 0; j < result.cols(); j++) {
+            max_from_row = std::max(max_from_row, result(i, j));
+        }
+        // exponentiate shifted values and find sum for the row
+        double sum = 0.0;
+        for (size_t j = 0; j < result.cols(); j++) {
+            result(i, j) = std::exp(result(i, j) - max_from_row);
+            sum += result(i, j);
+        }
+        // normalize to get probabilities
+        if (sum != 0.0) {
+            for (size_t j = 0; j < result.cols(); j++) {
+                result(i, j) /= sum;
+            }
+        }
+    }
+    return result;
+}
