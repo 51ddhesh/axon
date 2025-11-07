@@ -1,6 +1,7 @@
 #include "include/Tensor.hpp"
 #include "include/Activations.hpp"
 #include "include/Linear.hpp"
+#include "include/Sequential.hpp"
 
 int main() {
     // Tensor t = Tensor::zeros(2, 2);
@@ -65,21 +66,41 @@ int main() {
     // Tensor softmaxed_ = axon_activation::softmax(softmax_test);
     // print(softmaxed_);
 
-    // Tensor with batch size = 2, features = 10
-    Tensor a1 = Tensor::randn(2, 10);
-    std::cout << "Input Tensor:\n";
-    print(a1);
+    // // Tensor with batch size = 2, features = 10
+    // Tensor a1 = Tensor::randn(2, 10);
+    // std::cout << "Input Tensor:\n";
+    // print(a1);
 
-    // Create a torch.nn.Linear -esque object or a tf.layers.Dense
-    // 10 features, 5 neurons (outputs), ReLU activation
-    Linear layer(10, 5, axon_activation::relu);
+    // // Create a torch.nn.Linear -esque object or a tf.layers.Dense
+    // // 10 features, 5 neurons (outputs), ReLU activation
+    // Linear layer(10, 5, axon_activation::relu);
 
-    Tensor output = layer.linear(a1);
-    std::cout << "Running the forward pass:\n";
-    print(output);
+    // Tensor output = layer.linear(a1);
+    // std::cout << "Running the forward pass:\n";
+    // print(output);
 
-    // Verify the shape of the output
+    // // Verify the shape of the output
+    // std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
+    
+    // Create an input Tensor, batch_size = 4, features = 20
+    Tensor in = Tensor::randn(4, 20);
+    std::cout << "Input Tensor\n";
+    print(in);
+    
+    Sequential layers;
+    // Add the first layer: input = 20, neurons = 16, ReLU
+    layers.add(Linear(20, 16, axon_activation::relu));
+    // Add the second layer: input = 16, neurons = 8, ReLU
+    layers.add(Linear(16, 8, axon_activation::relu));
+    // Add the third layer: input = 8, output = 3, softmax
+    layers.add(Linear(8, 3, axon_activation::softmax));
+    
+    Tensor output = layers.linear(in); // or layers.forward(in)
     std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
+    std::cout << "\nOutput Tensor:\n";
+    print(output);
 
     return 0;
 }
+
+
