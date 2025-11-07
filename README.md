@@ -42,11 +42,3 @@ The creates an executable `ax` in `build/`
 ```bash
 ./build/ax
 ```
-
-
-
-## TODOs:
-- [x] Implement softmax in `src/nn/`
-- [ ] Implement Transpose in `src/core/tensor_ops.cpp`
-
-

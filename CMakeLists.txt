@@ -15,6 +15,7 @@ add_executable(ax
     src/core/tensor_ops.cpp
     src/core/tensor_utils.cpp
     src/nn/activations.cpp
+    src/nn/linear.cpp
 )
 
 target_include_directories(ax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

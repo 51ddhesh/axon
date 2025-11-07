@@ -1,3 +1,7 @@
+// src/nn/activations.cpp
+// github.com/51ddhesh
+// MIT License
+
 #include "../../include/Activations.hpp"
 
 Tensor axon_activation::relu(const Tensor& input) {
