@@ -1,5 +1,6 @@
 #include "include/Tensor.hpp"
 #include "include/Activations.hpp"
+#include "include/Linear.hpp"
 
 int main() {
     // Tensor t = Tensor::zeros(2, 2);
@@ -63,6 +64,22 @@ int main() {
 
     // Tensor softmaxed_ = axon_activation::softmax(softmax_test);
     // print(softmaxed_);
+
+    // Tensor with batch size = 2, features = 10
+    Tensor a1 = Tensor::randn(2, 10);
+    std::cout << "Input Tensor:\n";
+    print(a1);
+
+    // Create a torch.nn.Linear -esque object or a tf.layers.Dense
+    // 10 features, 5 neurons (outputs), ReLU activation
+    Linear layer(10, 5, axon_activation::relu);
+
+    Tensor output = layer.linear(a1);
+    std::cout << "Running the forward pass:\n";
+    print(output);
+
+    // Verify the shape of the output
+    std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
 
     return 0;
 }

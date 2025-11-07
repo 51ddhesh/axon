@@ -98,8 +98,8 @@ public:
     static Tensor ones(size_t rows_, size_t cols_);
 
     // Get a random-valued (between 0 and 1 by default) Tensor
-    static Tensor randn(size_t rows_, size_t cols_, std::vector<axon_dtype::f64> limits_);
     static Tensor randn(size_t rows_, size_t cols_);
+    static Tensor randn(size_t rows_, size_t cols_, std::vector<axon_dtype::f64> limits_);
 
     // Get a random-valued (between -1000 and 1000 by default) Tensor (integer-valued)
     static Tensor randint(size_t rows_, size_t cols_);
