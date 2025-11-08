@@ -17,6 +17,7 @@ add_executable(ax
     src/nn/activations.cpp
     src/nn/linear.cpp
     src/nn/sequential.cpp
+    src/nn/loss.cpp
 )
 
 target_include_directories(ax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

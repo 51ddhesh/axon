@@ -2,6 +2,7 @@
 #include "include/Activations.hpp"
 #include "include/Linear.hpp"
 #include "include/Sequential.hpp"
+#include "include/LossFunctions.hpp"
 
 int main() {
     // Tensor t = Tensor::zeros(2, 2);
@@ -82,23 +83,56 @@ int main() {
     // // Verify the shape of the output
     // std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
     
-    // Create an input Tensor, batch_size = 4, features = 20
-    Tensor in = Tensor::randn(4, 20);
-    std::cout << "Input Tensor\n";
-    print(in);
+    // // Create an input Tensor, batch_size = 4, features = 20
+    // Tensor in = Tensor::randn(4, 20);
+    // std::cout << "Input Tensor\n";
+    // print(in);
     
-    Sequential layers;
-    // Add the first layer: input = 20, neurons = 16, ReLU
-    layers.add(Linear(20, 16, axon_activation::relu));
-    // Add the second layer: input = 16, neurons = 8, ReLU
-    layers.add(Linear(16, 8, axon_activation::relu));
-    // Add the third layer: input = 8, output = 3, softmax
-    layers.add(Linear(8, 3, axon_activation::softmax));
+    // Sequential layers;
+    // // Add the first layer: input = 20, neurons = 16, ReLU
+    // layers.add(Linear(20, 16, axon_activation::relu));
+    // // Add the second layer: input = 16, neurons = 8, ReLU
+    // layers.add(Linear(16, 8, axon_activation::relu));
+    // // Add the third layer: input = 8, output = 3, softmax
+    // layers.add(Linear(8, 3, axon_activation::softmax));
     
-    Tensor output = layers.linear(in); // or layers.forward(in)
-    std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
-    std::cout << "\nOutput Tensor:\n";
-    print(output);
+    // Tensor output = layers.linear(in); // or layers.forward(in)
+    // std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
+    // std::cout << "\nOutput Tensor:\n";
+    // print(output);
+
+
+    // // Testing the Mean Squared Error
+    // std::cout << "MSE Test:\n";
+    // Tensor y_pred_mse = Tensor::randn(1, 10);
+    // Tensor y_true_mse = Tensor::randn(1, 10);
+
+    // double mse = axon_loss::mse(y_pred_mse, y_true_mse);
+    // std::cout << "Y Predicted:\n";
+    // print(y_pred_mse);
+    // std::cout << "Y True:\n";
+    // print(y_true_mse);
+    // std::cout << "Loss: " << mse << std::endl;
+
+
+    // // Testing the Categorical Cross-Entropy Loss
+    // std::cout << "CCE Test:\n";
+    // Tensor y_pred_cce({
+    //     {0.1, 0.8, 0.1},
+    //     {0.9, 0.05, 0.05}
+    // });
+
+    // Tensor y_true_cce({
+    //     {0.0, 1.0, 0.0},
+    //     {1.0, 0.0, 0.0}
+    // });
+
+    // double cce = axon_loss::cce(y_pred_cce, y_true_cce);
+    // std::cout << "Y Predicted:\n";
+    // print(y_pred_cce);
+    // std::cout << "Y True Labels:\n";
+    // print(y_true_cce);
+    // std::cout << "Loss: " << cce << std::endl;
 
     return 0;
 }
