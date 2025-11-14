@@ -111,7 +111,7 @@ public:
 
     // * IO
 
-    void print_tensor();
+    void print_tensor() const;
 
     // * Tensor Ops
 

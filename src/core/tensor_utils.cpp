@@ -6,7 +6,7 @@
 #include "../../utils/random_.hpp"
 #include <iomanip>
 
-void Tensor::print_tensor() {
+void Tensor::print_tensor() const {
     std::cout << "Tensor([";
     for (size_t i = 0; i < rows(); i++) {
         if (i > 0) {
@@ -30,7 +30,7 @@ void Tensor::print_tensor() {
 
 // Wrapper over `Tensor::print_tensor
 void print(const Tensor& t) {
-    const_cast<Tensor&>(t).print_tensor();
+    t.print_tensor();
 }
 
 Tensor Tensor::zeros(size_t rows_, size_t cols_) {
