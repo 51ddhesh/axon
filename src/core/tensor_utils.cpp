@@ -78,3 +78,17 @@ Tensor Tensor::randn(size_t rows_, size_t cols_) {
     return random_tensor;
 }
 
+Tensor Tensor::row(std::initializer_list<axon_dtype::f64> init_list) {
+    return Tensor(init_list);
+}
+
+Tensor Tensor::column(std::initializer_list<axon_dtype::f64> init_list) {
+    Tensor result(init_list.size(), 1);
+    size_t i = 0;
+    for (const axon_dtype::f64& val : init_list) {
+        result(i, 0) = val;
+        i++;
+    }
+    return result;
+}
+

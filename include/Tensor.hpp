@@ -13,6 +13,7 @@
 namespace axon_dtype {
     using i32 = int;
     using i64 = long long;
+    using f32 = float;
     using f64 = double;
 }
 
@@ -107,6 +108,12 @@ public:
 
     // Transpose
     Tensor T() const;
+
+    // Create a column vector
+    static Tensor column(std::initializer_list<axon_dtype::f64> init_list);
+
+    // Create a row vector
+    static Tensor row(std::initializer_list<axon_dtype::f64> init_list);
 
 
     // * IO
