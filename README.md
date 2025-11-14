@@ -1,7 +1,7 @@
 # Axon
 - Branch `master`
 
-[**`AXON`**](https://github.com/51ddhesh/axon/) is a simple header-only deep learning library in the process inspired from `PyTorch`.
+[**`AXON`**](https://github.com/51ddhesh/axon/) is a simple deep learning library in the process inspired from `PyTorch`.
 
 
 --- 
