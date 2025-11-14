@@ -9,8 +9,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -O3)
 endif()
 
-add_executable(ax
-    ./main.cpp
+add_library(axon
     src/core/tensor_core.cpp
     src/core/tensor_ops.cpp
     src/core/tensor_utils.cpp
@@ -20,4 +19,8 @@ add_executable(ax
     src/nn/loss.cpp
 )
 
-target_include_directories(ax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(axon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_executable(ax main.cpp)
+
+target_link_libraries(ax PRIVATE axon)
