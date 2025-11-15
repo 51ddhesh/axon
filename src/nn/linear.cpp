@@ -13,32 +13,17 @@ Linear::Linear(size_t input_size, size_t output_size, std::function<Tensor(const
     _bias = Tensor::zeros(1, output_size);
 }
 
-// `tf` style forward pass
-Tensor Linear::forward(const Tensor& input) const {
-    // Perform the matmul input @ weights
-    Tensor result = matmul(input, _weights);
-    // Add in the bias
-    // Since there is no broadcasting implemented yet we make a temporary arrangement 
-    for (size_t i = 0; i < result.rows(); i++) {
-        for (size_t j = 0; j < result.cols(); j++) {
-            result(i, j) += _bias(0, j);
-        }
-    }
 
-    return _activation(result);
-}
-
-// `torch` style forward pass
+// `torch` style forward pass 
+// Main implementation of the forward pass
 Tensor Linear::linear(const Tensor& input) const {
     // Perform the matmul input @ weights
     Tensor result = matmul(input, _weights);
-    // Add in the bias
-    // Since there is no broadcasting implemented yet we make a temporary arrangement 
-    for (size_t i = 0; i < result.rows(); i++) {
-        for (size_t j = 0; j < result.cols(); j++) {
-            result(i, j) += _bias(0, j);
-        }
-    }
-
+    result += _bias;
     return _activation(result);
+}
+
+// `tf` style forward pass
+Tensor Linear::forward(const Tensor& input) const {
+    return this -> linear(input);
 }
