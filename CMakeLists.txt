@@ -17,6 +17,7 @@ add_library(axon
     src/nn/linear.cpp
     src/nn/sequential.cpp
     src/nn/loss.cpp
+    src/math/comparisons.cpp
 )
 
 target_include_directories(axon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
