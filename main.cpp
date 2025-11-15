@@ -68,39 +68,39 @@ int main() {
     // Tensor softmaxed_ = axon_activation::softmax(softmax_test);
     // print(softmaxed_);
 
-    // Tensor with batch size = 2, features = 10
-    Tensor a1 = Tensor::randn(2, 10);
-    std::cout << "Input Tensor:\n";
-    print(a1);
+    // // Tensor with batch size = 2, features = 10
+    // Tensor a1 = Tensor::randn(2, 10);
+    // std::cout << "Input Tensor:\n";
+    // print(a1);
 
-    // Create a torch.nn.Linear -esque object or a tf.layers.Dense
-    // 10 features, 5 neurons (outputs), ReLU activation
-    Linear layer(10, 5, axon_activation::relu);
+    // // Create a torch.nn.Linear -esque object or a tf.layers.Dense
+    // // 10 features, 5 neurons (outputs), ReLU activation
+    // Linear layer(10, 5, axon_activation::relu);
 
-    Tensor output = layer.linear(a1);
-    std::cout << "Running the forward pass:\n";
-    print(output);
+    // Tensor output = layer.linear(a1);
+    // std::cout << "Running the forward pass:\n";
+    // print(output);
 
-    // Verify the shape of the output
-    std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
+    // // Verify the shape of the output
+    // std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
     
-    // Create an input Tensor, batch_size = 4, features = 20
-    Tensor in = Tensor::randn(4, 16);
-    std::cout << "Input Tensor\n";
-    print(in);
+    // // Create an input Tensor, batch_size = 4, features = 20
+    // Tensor in = Tensor::randn(4, 16);
+    // std::cout << "Input Tensor\n";
+    // print(in);
     
-    Sequential layers;
-    // Add the first layer: input = 20, neurons = 16, ReLU
-    layers.add(Linear(16, 16, axon_activation::relu));
-    // Add the second layer: input = 16, neurons = 8, ReLU
-    layers.add(Linear(16, 8, axon_activation::relu));
-    // Add the third layer: input = 8, output = 3, softmax
-    layers.add(Linear(8, 3, axon_activation::softmax));
+    // Sequential layers;
+    // // Add the first layer: input = 20, neurons = 16, ReLU
+    // layers.add(Linear(16, 16, axon_activation::relu));
+    // // Add the second layer: input = 16, neurons = 8, ReLU
+    // layers.add(Linear(16, 8, axon_activation::relu));
+    // // Add the third layer: input = 8, output = 3, softmax
+    // layers.add(Linear(8, 3, axon_activation::softmax));
     
-    output = layers.linear(in); // or layers.forward(in)
-    std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
-    std::cout << "\nOutput Tensor:\n";
-    print(output);
+    // output = layers.linear(in); // or layers.forward(in)
+    // std::cout << "Output shape: (" << output.rows() << ", " << output.cols() << ")\n";
+    // std::cout << "\nOutput Tensor:\n";
+    // print(output);
 
 
     // // Testing the Mean Squared Error
@@ -145,7 +145,7 @@ int main() {
     // Tensor t1 = Tensor::zeros(3, 3);
     // print(t1);
     // std::cout << "----------------------------------------\n";
-    // Tensor t2({1});
+    // Tensor t2 = Tensor::column({1, 2, 3});
     // print(t2);
     // std::cout << "----------------------------------------\n";
     // print(t1 + t2);
@@ -154,19 +154,19 @@ int main() {
     // Tensor b = Tensor::randn(1, 1);
 
     // print(a); print(b);
-
+    // b(0) = 1.000;
     // Tensor is_g = axon::math::gt(b, a);
     // print(is_g);
 
-    // Tensor a = Tensor::randn(2, 2);
-    // Tensor b = Tensor::randn(2, 2);
+    // a = Tensor::randn(2, 2);
+    // b = Tensor::randn(2, 2);
     
     // a(1) = 1.0;
     // b(1) = 1.0;
     
     // print(a); print(b);
-    // Tensor is_less = axon::math::eq(a, b);
-    // print(is_less);
+    // Tensor is_eq = axon::math::eq(a, b);
+    // print(is_eq);
 
     return 0;
 }
