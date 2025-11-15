@@ -134,6 +134,20 @@ int main() {
     // print(y_true_cce);
     // std::cout << "Loss: " << cce << std::endl;
 
+    // Tensor t2({10, 10, 10});
+    // Tensor t1 = Tensor::randn(3, 3);
+    // print(t1);
+    // t1 *= 10;
+    // print(t1);
+    // print(t1 / t2);
+
+    Tensor t1 = Tensor::zeros(3, 3);
+    print(t1);
+    std::cout << "----------------------------------------\n";
+    Tensor t2({1});
+    print(t2);
+    std::cout << "----------------------------------------\n";
+    print(t1 + t2);
     return 0;
 }
 
