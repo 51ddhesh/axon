@@ -1,6 +1,6 @@
 // include/TensorMath.hpp
 // github.com/51ddhesh/axon
-// 
+// MIT License
 
 
 #ifndef AXON_TENSOR_MATH_HPP

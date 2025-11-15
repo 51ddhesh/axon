@@ -1,3 +1,7 @@
+// src/math/comparisons.cpp
+// github.com/51ddhesh/axon
+// MIT License
+
 #include "../../include/TensorMath.hpp"
 
 Tensor axon::math::gt(const Tensor& a, const Tensor& b) {
