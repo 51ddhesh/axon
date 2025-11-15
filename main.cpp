@@ -4,16 +4,6 @@
 #include "include/Sequential.hpp"
 #include "include/LossFunctions.hpp"
 
-template <typename T> 
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
-    os << "[";
-    for (auto& i : v) {
-        os << i << ',';
-    }
-    os << "]\n";
-    return os;
-}
-
 int main() {
     // Tensor t = Tensor::zeros(2, 2);
     // print(t);
@@ -144,15 +134,13 @@ int main() {
     // print(y_true_cce);
     // std::cout << "Loss: " << cce << std::endl;
 
-    Tensor b1 = Tensor::row({1, 2, 3});
-    Tensor b2 = Tensor::zeros(3, 3);
-    Tensor t = b1 + b2;
-    Tensor b3 = Tensor::column({1, 2, 3});
-    print(t);
-    std::cout << t.getShape() << '\n';
-    std::cout << b1.getShape() << '\n'; 
-    t *= b1;
-    print(t);
+    Tensor t2({10, 10, 10});
+    Tensor t1 = Tensor::randn(3, 3);
+    print(t1);
+    t1 *= 10;
+    print(t1);
+    print(t1 / t2);
+
     return 0;
 }
 
