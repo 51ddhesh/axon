@@ -4,50 +4,56 @@
 
 #include "../../include/Tensor.hpp"
 
-Tensor Tensor::operator+ (const Tensor& other_) const {
-    // Check for compatibility
-    bool rows_compatible = ((this -> rows() == other_.rows()) || (this -> rows() == 1) || (other_.rows() == 1));
-    bool cols_compatible = ((this -> cols() == other_.cols()) || (this -> cols() == 1) || (other_.cols() == 1));
-    
-    if (!(rows_compatible && cols_compatible)) {
-        throw std::invalid_argument("Tensors not compatible for addition");
-    }
+// Anonymous namespace for private helper
+namespace {
+    template <typename Functor>
+    Tensor _apply_op_bin(const Tensor& a, const Tensor& b, Functor op) {
+        // Check for compatibility
+        bool rows_compatible = ((a.rows() == b.rows()) || (a.rows() == 1) || (b.rows() == 1));
+        bool cols_compatible = ((a.cols() == b.cols()) || (a.cols() == 1) || (b.cols() == 1));
 
-    // Form the resultant Tensor
-    size_t result_rows = std::max(this -> rows(), other_.rows());
-    size_t result_cols = std::max(this -> cols(), other_.cols());
-    
-    Tensor result(result_rows, result_cols);
-
-    // Define the strides
-    size_t this_row_stride = (this -> rows() == 1) ? 0 : 1;
-    size_t this_col_stride = (this -> cols() == 1) ? 0 : 1;
-    size_t other_row_stride = (other_.rows() == 1) ? 0 : 1;
-    size_t other_col_stride = (other_.cols() == 1) ? 0 : 1;
-
-    // Define the indices 
-    size_t this_r = 0, this_c = 0;
-    size_t other_r = 0, other_c = 0;
-
-    for (size_t i = 0; i < result_rows; i++) {
-        // Reset the column indices after the column loop starts
-        this_c = 0;
-        other_c = 0;
-
-        for (size_t j = 0; j < result_cols; j++) {
-            result(i, j) = (*this)(this_r, this_c) + other_(other_r, other_c);
-
-            // Update the column indices after addition with the stride
-            this_c += this_col_stride;
-            other_c += other_col_stride;
+        if (!(rows_compatible && cols_compatible)) {
+            throw std::invalid_argument("The shape of the Tensors is not compatible");
         }
 
-        // Update the row indices with the stride after the column loop completes
-        this_r += this_row_stride;
-        other_r += other_row_stride;
-    }
+        // Form the resultant tensor
+        size_t result_rows = std::max(a.rows(), b.rows());
+        size_t result_cols = std::max(a.cols(), b.cols());
+        Tensor result(result_rows, result_cols);
 
-    return result;
+        // Find the strides 
+        size_t a_row_stride = (a.rows() == 1) ? 0 : 1;
+        size_t a_col_stride = (a.cols() == 1) ? 0 : 1;
+        size_t b_row_stride = (b.rows() == 1) ? 0 : 1;
+        size_t b_col_stride = (b.cols() == 1) ? 0 : 1;
+
+        // Initialize the indices
+        size_t a_r = 0, a_c = 0;
+        size_t b_r = 0, b_c = 0;
+
+        // Actual operation
+        for (size_t i = 0; i < result_rows; i++) {
+            // Reset the column indices before entering the column loop
+            a_c = 0;
+            b_c = 0;
+            for (size_t j = 0; j < result_cols; j++) {
+                // Perform the op
+                result(i, j) = op(a(a_r, a_c), b(b_r, b_c));
+                // advance the column indices
+                a_c += a_col_stride;
+                b_c += b_col_stride;
+            }
+            // Advance the row indices
+            a_r += a_row_stride;
+            b_r += b_row_stride;
+        }
+        return result;
+    }
+} // namespace 
+
+
+Tensor Tensor::operator+ (const Tensor& other_) const {
+    return _apply_op_bin((*this), other_, std::plus<axon_dtype::f64>());
 }
 
 Tensor Tensor::operator+= (const Tensor& other_) {
@@ -56,42 +62,7 @@ Tensor Tensor::operator+= (const Tensor& other_) {
 }
 
 Tensor Tensor::operator- (const Tensor& other_) const {
-    bool rows_compatible = ((this -> rows() == other_.rows()) || (this -> rows() == 1) || (other_.rows() == 1));
-    bool cols_compatible = ((this -> cols() == other_.cols()) || (this -> cols() == 1) || (other_.cols() == 1));
-
-    if(!(rows_compatible && cols_compatible)) {
-        throw std::invalid_argument("Tensors are not compatible for subtraction");
-    }
-
-    size_t result_rows = std::max(this -> rows(), other_.rows());
-    size_t result_cols = std::max(this -> cols(), other_.cols());
-
-    Tensor result(result_rows, result_cols);
-
-    size_t this_row_stride = (this -> rows() == 1) ? 0 : 1;
-    size_t this_col_stride = (this -> cols() == 1) ? 0 : 1;
-    size_t other_row_stride = (other_.rows() == 1) ? 0 : 1;
-    size_t other_col_stride = (other_.cols() == 1) ? 0 : 1;
-    
-    size_t this_r = 0, this_c = 0;
-    size_t other_r = 0, other_c = 0;
-
-    for (size_t i = 0; i < result_rows; i++) {
-        this_c = 0;
-        other_c = 0;
-
-        for (size_t j = 0; j < result_cols; j++) {
-            result(i, j) = (*this)(this_r, this_c) - other_(other_r, other_c);
-
-            this_c += this_col_stride;
-            other_c += other_col_stride;
-        }
-
-        this_r += this_row_stride;
-        other_r += other_row_stride;
-    }
-
-    return result;
+    return _apply_op_bin((*this), other_, std::minus<axon_dtype::f64>());
 }
 
 Tensor Tensor::operator-= (const Tensor& other_) {
@@ -100,42 +71,7 @@ Tensor Tensor::operator-= (const Tensor& other_) {
 }
 
 Tensor Tensor::operator* (const Tensor& other_) const {
-    bool rows_compatible = ((this -> rows() == other_.rows()) || (this -> rows() == 1) || (other_.rows() == 1));
-    bool cols_compatible = ((this -> cols() == other_.cols()) || (this -> cols() == 1) || (other_.cols() == 1));
-    
-    if (!(rows_compatible && cols_compatible)) {
-        throw std::invalid_argument("Tensors not compatible for addition");
-    }
-
-    size_t result_rows = std::max(this -> rows(), other_.rows());
-    size_t result_cols = std::max(this -> cols(), other_.cols());
-    
-    Tensor result(result_rows, result_cols);
-
-    size_t this_row_stride = (this -> rows() == 1) ? 0 : 1;
-    size_t this_col_stride = (this -> cols() == 1) ? 0 : 1;
-    size_t other_row_stride = (other_.rows() == 1) ? 0 : 1;
-    size_t other_col_stride = (other_.cols() == 1) ? 0 : 1;
-
-    size_t this_r = 0, this_c = 0;
-    size_t other_r = 0, other_c = 0;
-
-    for (size_t i = 0; i < result_rows; i++) {
-        this_c = 0;
-        other_c = 0;
-
-        for (size_t j = 0; j < result_cols; j++) {
-            result(i, j) = (*this)(this_r, this_c) * other_(other_r, other_c);
-
-            this_c += this_col_stride;
-            other_c += other_col_stride;
-        }
-
-        this_r += this_row_stride;
-        other_r += other_row_stride;
-    }
-
-    return result;
+    return _apply_op_bin((*this), other_, std::multiplies<axon_dtype::f64>());
 }
 
 Tensor Tensor::operator*= (const Tensor& other_) {
@@ -143,44 +79,10 @@ Tensor Tensor::operator*= (const Tensor& other_) {
     return (*this);
 }
 
+// ! NOTE: `std::divides` does not have an in-built assert to check for the divisor being zero
+// * Dividing by zero will result in `inf`
 Tensor Tensor::operator/ (const Tensor& other_) const {
-    bool rows_compatible = ((this -> rows() == other_.rows()) || (this -> rows() == 1) || (other_.rows() == 1));
-    bool cols_compatible = ((this -> cols() == other_.cols()) || (this -> cols() == 1) || (other_.cols() == 1));
-    
-    if (!(rows_compatible && cols_compatible)) {
-        throw std::invalid_argument("Tensors not compatible for addition");
-    }
-
-    size_t result_rows = std::max(this -> rows(), other_.rows());
-    size_t result_cols = std::max(this -> cols(), other_.cols());
-    
-    Tensor result(result_rows, result_cols);
-
-    size_t this_row_stride = (this -> rows() == 1) ? 0 : 1;
-    size_t this_col_stride = (this -> cols() == 1) ? 0 : 1;
-    size_t other_row_stride = (other_.rows() == 1) ? 0 : 1;
-    size_t other_col_stride = (other_.cols() == 1) ? 0 : 1;
-
-    size_t this_r = 0, this_c = 0;
-    size_t other_r = 0, other_c = 0;
-
-    for (size_t i = 0; i < result_rows; i++) {
-        this_c = 0;
-        other_c = 0;
-
-        for (size_t j = 0; j < result_cols; j++) {
-            assert(other_(other_r, other_c) != 0.0);
-            result(i, j) = (*this)(this_r, this_c) / other_(other_r, other_c);
-
-            this_c += this_col_stride;
-            other_c += other_col_stride;
-        }
-
-        this_r += this_row_stride;
-        other_r += other_row_stride;
-    }
-
-    return result;
+    return _apply_op_bin((*this), other_, std::divides<axon_dtype::f64>());
 }
 
 Tensor Tensor::operator/= (const Tensor& other_) {
