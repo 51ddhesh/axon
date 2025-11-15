@@ -3,6 +3,7 @@
 #include "include/Linear.hpp"
 #include "include/Sequential.hpp"
 #include "include/LossFunctions.hpp"
+#include "include/TensorMath.hpp"
 
 int main() {
     // Tensor t = Tensor::zeros(2, 2);
@@ -141,13 +142,32 @@ int main() {
     // print(t1);
     // print(t1 / t2);
 
-    Tensor t1 = Tensor::zeros(3, 3);
-    print(t1);
-    std::cout << "----------------------------------------\n";
-    Tensor t2({1});
-    print(t2);
-    std::cout << "----------------------------------------\n";
-    print(t1 + t2);
+    // Tensor t1 = Tensor::zeros(3, 3);
+    // print(t1);
+    // std::cout << "----------------------------------------\n";
+    // Tensor t2({1});
+    // print(t2);
+    // std::cout << "----------------------------------------\n";
+    // print(t1 + t2);
+
+    // Tensor a = Tensor::randn(2, 2);
+    // Tensor b = Tensor::randn(1, 1);
+
+    // print(a); print(b);
+
+    // Tensor is_g = axon::math::gt(b, a);
+    // print(is_g);
+
+    // Tensor a = Tensor::randn(2, 2);
+    // Tensor b = Tensor::randn(2, 2);
+    
+    // a(1) = 1.0;
+    // b(1) = 1.0;
+    
+    // print(a); print(b);
+    // Tensor is_less = axon::math::eq(a, b);
+    // print(is_less);
+
     return 0;
 }
 
