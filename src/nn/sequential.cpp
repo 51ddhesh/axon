@@ -17,10 +17,5 @@ Tensor Sequential::linear(const Tensor& input) const {
 }
 
 Tensor Sequential::forward(const Tensor& input) const {
-    Tensor current = input;
-    for (const auto& layer : _layers) {
-        current = layer.forward(current);
-    }
-    return current;
+    return this -> linear(input);
 }
-
