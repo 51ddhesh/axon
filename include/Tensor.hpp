@@ -143,15 +143,21 @@ public:
     // Compound Operations 
     // Element wise
     Tensor operator+=(const Tensor& other);
+
     Tensor operator-=(const Tensor& other);
+    
     Tensor operator*=(const Tensor& other);
+    
     Tensor operator/=(const Tensor& other);
+    
     // Ops witch scalars 
     Tensor operator+=(const double val_);
+    
     Tensor operator-=(const double val_);
+    
     Tensor operator*=(const double val_);
+    
     Tensor operator/=(const double val_);
-
 };
 
 

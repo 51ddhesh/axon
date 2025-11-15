@@ -18,19 +18,6 @@ Tensor Tensor::operator- (const Tensor& other_) const {
     return result;
 }
 
-// Element-wise Tensor Multiplication 
-// ! THIS IS NOT `MATMUL`
-Tensor Tensor::operator* (const Tensor& other_) const {
-    if (getShape() != other_.getShape()) {
-        throw std::invalid_argument("The shapes of the two tensors must match");
-    }
-    Tensor result(rows(), cols());
-    for (size_t i = 0; i < this -> _data.size(); i++) {
-        result._data[i] = this -> _data[i] * other_._data[i];
-    }
-    return result;
-}
-
 // Element-wise Tensor division
 Tensor Tensor::operator/ (const Tensor& other_) const {
     if (getShape() != other_.getShape()) {
@@ -137,22 +124,65 @@ Tensor Tensor::operator+ (const Tensor& other_) const {
 }
 
 
+Tensor Tensor::operator*=(const Tensor& other_) {
+    // Case - 1: Both tensors have the same shape
+    // Proceed as normal
+    if (this -> getShape() == other_.getShape()) {
+        for (size_t i = 0; i < this -> get_size(); i++) {
+            this -> _data[i] *= other_._data[i];
+        }
+        return *this;
+    }
+
+    // Case - 2: this.shape = (R, C) and other.shape = (1, C)
+    // i.e. Broadcast a row vector
+    // [[1, 2, 3],   [[10],     [[1, 2, 3],   [[10, 10, 10],   [[10, 20, 30],
+    //  [4, 5, 6], *  [10], =>   [4, 5, 6], *  [10, 10, 10], =  [40, 50, 60],
+    //  [7, 8, 9]]    [10]]      [7, 8, 9]]    [10, 10, 10]]    [70, 80, 90]]
+    if (this -> cols() == other_.cols() && other_.rows() == 1 && this -> rows() > 1) {
+        for (size_t i = 0; i < this -> rows(); i++) {
+            for (size_t j = 0; j < this -> cols(); j++) {
+                (*this)(i, j) *= other_(0, j);
+            }
+        }
+        return *this;
+    }
+
+    // Case - 3: this.shape = (R, C) and other.shape = (R, 1)
+    // Broadcasting a column vector
+    // [[1, 2, 3],   [[10],     [[1, 2, 3],   [[10, 10, 10],   [[10, 20, 30],
+    //  [4, 5, 6], *  [10], =>   [4, 5, 6], *  [10, 10, 10], =  [40, 50, 60],
+    //  [7, 8, 9]]    [10]]      [7, 8, 9]]    [10, 10, 10]]    [70, 80, 90]]
+    if (this -> rows() == other_.rows() && other_.cols() == 1 && this -> cols() > 1) {
+        for (size_t i = 0; i < this -> rows(); i++) {
+            for (size_t j = 0; j < this -> cols(); j++) {
+                (*this)(i, j) *= other_(i, 0);
+            }
+        }
+        return *this;
+    }
+
+    // Default case: Not compatible
+    throw std::invalid_argument("The shapes of the tensors cannot be broadcasted");
+}
+
+// Element-wise Tensor Multiplication 
+// ! THIS IS NOT `MATMUL`
+Tensor Tensor::operator* (const Tensor& other_) const {
+    if (this -> get_size() < other_.get_size()) {
+        return other_ * (*this);
+    }
+    Tensor result = (*this);
+    result *= other_;
+    return result;
+}
+
 Tensor Tensor::operator-=(const Tensor& other_) {
     if (this -> getShape() != other_.getShape()) {
         throw std::invalid_argument("The shape of the two tensors must match");
     }
     for (size_t i = 0; i < this -> _data.size(); i++) {
         this -> _data[i] -= other_._data[i];
-    }
-    return *this;
-}
-
-Tensor Tensor::operator*=(const Tensor& other_) {
-    if (this -> getShape() != other_.getShape()) {
-        throw std::invalid_argument("The shape of the two tensors must match");
-    }
-    for (size_t i = 0; i < this -> _data.size(); i++) {
-        this -> _data[i] *= other_._data[i];
     }
     return *this;
 }
