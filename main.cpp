@@ -168,6 +168,16 @@ int main() {
     // Tensor is_eq = axon::math::eq(a, b);
     // print(is_eq);
 
+    Tensor a = {
+        {2, 1},
+        {0, 3}
+    };
+
+    print(a);
+
+    std::cout << "---------------------------\n";
+    
+    print(axon::math::log2(a));
     return 0;
 }
 

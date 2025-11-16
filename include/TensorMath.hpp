@@ -7,6 +7,7 @@
 #define AXON_TENSOR_MATH_HPP
 
 #include "Tensor.hpp"
+#include <cmath>
 
 namespace axon {
     namespace math {
@@ -25,6 +26,40 @@ namespace axon {
         // Since floating point comparison is slightly inaccurate
         // The difference between a[i] and b[i] must be <= 1e-9
         Tensor eq(const Tensor& a, const Tensor& b); 
+
+        // The below section is defined in src/math/unary_ops.cpp
+        
+        // Calculates sine of all the elements of `input` 
+        // Returns a tensor with same shape as `input`
+        Tensor sin(const Tensor& input);
+    
+        // Calculates the cosine of all the elements of `input`
+        // Returns a `Tensor` with the same shape as `input`
+        Tensor cos(const Tensor& input);
+        
+        // Calculates the tangent of all the elements of `input`
+        // Returns a `Tensor` with the same shape as `input`
+        Tensor tan(const Tensor& input);
+ 
+        // Calculates the square root of all the elements of `input` 
+        // Returns a `Tensor` with the same shape as `input`
+        Tensor sqrt(const Tensor& input);
+        
+        // Calculates the exponential of all the elements of `input`
+        // Returns a `Tensor` with the same shape as `input`
+        Tensor exp(const Tensor& input);
+        
+        // Calculates the natural logarithm of all the elements of `input`
+        // Returns a `Tensor` with the same shape as `input`
+        Tensor ln(const Tensor& input);
+        
+        // Calculates the logarithm (base 10) of all the elements of `input`
+        // Returns a `Tensor` with the same shape as `input`
+        Tensor log10(const Tensor& input);
+
+        // Calculates the logarithm (base 2) of all the elements of `input`
+        // Returns a `Tensor` with the same shape as `input`
+        Tensor log2(const Tensor& input);
     }
 }
 
