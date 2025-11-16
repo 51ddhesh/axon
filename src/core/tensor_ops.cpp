@@ -7,7 +7,7 @@
 
 
 Tensor Tensor::operator+ (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::plus<axon_dtype::f64>());
+    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::plus<axon::dtype::f64>());
 }
 
 Tensor Tensor::operator+= (const Tensor& other_) {
@@ -16,7 +16,7 @@ Tensor Tensor::operator+= (const Tensor& other_) {
 }
 
 Tensor Tensor::operator- (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::minus<axon_dtype::f64>());
+    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::minus<axon::dtype::f64>());
 }
 
 Tensor Tensor::operator-= (const Tensor& other_) {
@@ -25,7 +25,7 @@ Tensor Tensor::operator-= (const Tensor& other_) {
 }
 
 Tensor Tensor::operator* (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::multiplies<axon_dtype::f64>());
+    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::multiplies<axon::dtype::f64>());
 }
 
 Tensor Tensor::operator*= (const Tensor& other_) {
@@ -36,7 +36,7 @@ Tensor Tensor::operator*= (const Tensor& other_) {
 // ! NOTE: `std::divides` does not have an in-built assert to check for the divisor being zero
 // * Dividing by zero will result in `inf`
 Tensor Tensor::operator/ (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::divides<axon_dtype::f64>());
+    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::divides<axon::dtype::f64>());
 }
 
 Tensor Tensor::operator/= (const Tensor& other_) {
@@ -112,12 +112,12 @@ Tensor Tensor::operator/=(const double val_) {
     return *this;
 }
 
-axon_dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b) {
+axon::dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b) {
     if (a.getShape() != b.getShape()) {
         throw std::invalid_argument("The shape must match for Frobenius Inner Product");
     }
 
-    axon_dtype::f64 result = 0.0;
+    axon::dtype::f64 result = 0.0;
     for (size_t i = 0; i < a.get_size(); i++) {
         result += a(i) * b(i);
     }
@@ -126,11 +126,11 @@ axon_dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b) {
 }
 
 
-axon_dtype::f64 dot(const Tensor& a, const Tensor& b) {
+axon::dtype::f64 dot(const Tensor& a, const Tensor& b) {
     if (a.get_size() != b.get_size()) {
         throw std::invalid_argument("The number of elements must be same for both Tensors to perform a dot product");
     }
-    axon_dtype::f64 result = 0.0;
+    axon::dtype::f64 result = 0.0;
 
     for (size_t i = 0; i < a.get_size(); i++) {
         result += a(i) * b(i);
@@ -138,6 +138,52 @@ axon_dtype::f64 dot(const Tensor& a, const Tensor& b) {
 
     return result;
 }
+
+Tensor operator+ (axon::dtype::f64 scalar, const Tensor& tensor) {
+    return tensor + scalar;
+}
+
+Tensor operator* (axon::dtype::f64 scalar, const Tensor& tensor) {
+    return tensor * scalar;
+}
+
+Tensor operator- (axon::dtype::f64 scalar, const Tensor& tensor) {
+    Tensor result(tensor.rows(), tensor.cols());
+    size_t t_size = tensor.get_size();
+
+    for (size_t i = 0; i < t_size; i++) {
+        result(i) = scalar - tensor(i);
+    }
+
+    return result;
+}
+
+Tensor operator/ (axon::dtype::f64 scalar, const Tensor& tensor) {
+    Tensor result(tensor.rows(), tensor.cols());
+    size_t t_size = tensor.get_size();
+    
+    for (size_t i = 0; i < t_size; i++) {
+        // * NOTE: tensor(i) can be 0, which would result in `inf`
+        result(i) = scalar / tensor(i);
+    }
+
+    return result;
+}
+
+bool operator== (const Tensor& a, const Tensor& b) {
+    if (a.getShape() != b.getShape()) {
+        throw std::invalid_argument("The shapes of the two tensors must match for this operation");
+    }
+
+    size_t size = a.get_size();
+    for (size_t i = 0; i < size; i++) {
+        if (std::abs(a(i) - b(i)) > axon::constants::eps) {
+            return false;
+        }         
+    }
+    return true;
+}
+
 
 // cache-friendly matmul
 Tensor matmul(const Tensor& a, const Tensor& b) {

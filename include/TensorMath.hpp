@@ -60,6 +60,14 @@ namespace axon {
         // Calculates the logarithm (base 2) of all the elements of `input`
         // Returns a `Tensor` with the same shape as `input`
         Tensor log2(const Tensor& input);
+    
+        // Raises all elements of `input` (base) to the given `exponent`
+        // Returns a `Tensor` with the same shape as `input`
+        Tensor pow(const Tensor& base, axon::dtype::f64 exponent);
+        
+        // `pow(base, i) : for i in exponent` 
+        // Returns a `Tensor` with the same shape as `exponent`
+        Tensor pow(axon::dtype::f64 base, const Tensor& exponent);
     }
 }
 

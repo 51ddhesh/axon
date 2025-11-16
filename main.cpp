@@ -177,7 +177,17 @@ int main() {
 
     std::cout << "---------------------------\n";
     
-    print(axon::math::log2(a));
+    // auto b = axon::math::log2(a);
+    
+    // print(b);
+    
+    // print(axon::math::pow(2, b));
+    
+    print(1 / a);
+    std::cout << "---------------------------\n";
+    
+    print((1 / a) * a * a);
+    
     return 0;
 }
 
