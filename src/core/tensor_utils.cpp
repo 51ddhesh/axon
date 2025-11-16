@@ -51,7 +51,7 @@ Tensor Tensor::randint(size_t rows_, size_t cols_) {
     return random_int_tensor;
 }
 
-Tensor Tensor::randint(size_t rows_, size_t cols_, std::vector<axon_dtype::i32> limits_) {
+Tensor Tensor::randint(size_t rows_, size_t cols_, std::vector<axon::dtype::i32> limits_) {
     assert(limits_.size() == 2);
     Tensor random_int_tensor(rows_, cols_);
     for (size_t i = 0; i < random_int_tensor._data.size(); i++) {
@@ -60,7 +60,7 @@ Tensor Tensor::randint(size_t rows_, size_t cols_, std::vector<axon_dtype::i32> 
     return random_int_tensor;
 }
 
-Tensor Tensor::randn(size_t rows_, size_t cols_, std::vector<axon_dtype::f64> limits_) {
+Tensor Tensor::randn(size_t rows_, size_t cols_, std::vector<axon::dtype::f64> limits_) {
     assert(limits_.size() == 2);
     Tensor random_tensor(rows_, cols_);
     for (size_t i = 0; i < random_tensor.get_size(); i++) {
@@ -70,7 +70,7 @@ Tensor Tensor::randn(size_t rows_, size_t cols_, std::vector<axon_dtype::f64> li
 }
 
 Tensor Tensor::randn(size_t rows_, size_t cols_) {
-    axon_dtype::f64 min_ = 0.0, max_ = 1.0;
+    axon::dtype::f64 min_ = 0.0, max_ = 1.0;
     Tensor random_tensor(rows_, cols_);
     for (size_t i = 0; i < random_tensor.get_size(); i++) {
         random_tensor(i) = axon_random::random_double(min_, max_);
@@ -78,14 +78,14 @@ Tensor Tensor::randn(size_t rows_, size_t cols_) {
     return random_tensor;
 }
 
-Tensor Tensor::row(std::initializer_list<axon_dtype::f64> init_list) {
+Tensor Tensor::row(std::initializer_list<axon::dtype::f64> init_list) {
     return Tensor(init_list);
 }
 
-Tensor Tensor::column(std::initializer_list<axon_dtype::f64> init_list) {
+Tensor Tensor::column(std::initializer_list<axon::dtype::f64> init_list) {
     Tensor result(init_list.size(), 1);
     size_t i = 0;
-    for (const axon_dtype::f64& val : init_list) {
+    for (const axon::dtype::f64& val : init_list) {
         result(i, 0) = val;
         i++;
     }
