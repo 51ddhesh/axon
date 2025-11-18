@@ -19,6 +19,7 @@ add_library(axon
     src/nn/loss.cpp
     src/math/comparisons.cpp
     src/math/unary_ops.cpp
+    src/math/binary_ops.cpp
 )
 
 target_include_directories(axon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

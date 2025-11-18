@@ -68,6 +68,15 @@ namespace axon {
         // `pow(base, i) : for i in exponent` 
         // Returns a `Tensor` with the same shape as `exponent`
         Tensor pow(axon::dtype::f64 base, const Tensor& exponent);
+        
+        // Raises the corresponding element of the `base` to the corresponding element in the `power`
+        Tensor pow(const Tensor& base, const Tensor& power);   
+    
+        // returns the maximum element from each `Tensor` in a `Tensor`
+        Tensor maximum(const Tensor& a, const Tensor& b);
+
+        // returns the minimum element from each input tensor in a `Tensor`
+        Tensor minimum(const Tensor& a, const Tensor& b);
     }
 }
 

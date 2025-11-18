@@ -168,14 +168,14 @@ int main() {
     // Tensor is_eq = axon::math::eq(a, b);
     // print(is_eq);
 
-    Tensor a = {
-        {2, 1},
-        {0, 3}
-    };
+    // Tensor a = {
+    //     {2, 1},
+    //     {0, 3}
+    // };
 
-    print(a);
+    // print(a);
 
-    std::cout << "---------------------------\n";
+    // std::cout << "---------------------------\n";
     
     // auto b = axon::math::log2(a);
     
@@ -183,11 +183,19 @@ int main() {
     
     // print(axon::math::pow(2, b));
     
-    print(1 / a);
+    // print(axon::math::pow(a, Tensor::zeros(1, 1)));
+    
+    Tensor a = Tensor::randn(2, 2);
+    print(a);
+    std::cout << "---------------------------\n";
+    Tensor b = Tensor::randn(2, 2);
+    print(b);
     std::cout << "---------------------------\n";
     
-    print((1 / a) * a * a);
-    
+    print(axon::math::maximum(a, b));
+    std::cout << "---------------------------\n";
+    print(axon::math::minimum(a, b));
+
     return 0;
 }
 
