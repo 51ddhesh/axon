@@ -9,17 +9,26 @@
 #include <vector>
 #include <initializer_list>
 #include <assert.h>
+#include <cmath>
 
-namespace axon_dtype {
-    using i32 = int;
-    using i64 = long long;
-    using f32 = float;
-    using f64 = double;
+namespace axon {
+    namespace dtype {
+        using i32 = int;
+        using i64 = long long;
+        using f32 = float;
+        using f64 = double;
+    }
+
+    namespace constants {
+        constexpr dtype::f64 eps = 1e-9;
+        constexpr dtype::f64 pi = M_PI;
+        constexpr dtype::f64 e = M_E;
+    }
 }
 
 class Tensor {
 private:
-    std::vector<axon_dtype::f64> _data;
+    std::vector<axon::dtype::f64> _data;
     std::vector<size_t> _shape;
     std::vector<size_t> _strides;
 
@@ -100,20 +109,20 @@ public:
 
     // Get a random-valued (between 0 and 1 by default) Tensor
     static Tensor randn(size_t rows_, size_t cols_);
-    static Tensor randn(size_t rows_, size_t cols_, std::vector<axon_dtype::f64> limits_);
+    static Tensor randn(size_t rows_, size_t cols_, std::vector<axon::dtype::f64> limits_);
 
     // Get a random-valued (between -1000 and 1000 by default) Tensor (integer-valued)
     static Tensor randint(size_t rows_, size_t cols_);
-    static Tensor randint(size_t rows_, size_t cols_, std::vector<axon_dtype::i32> limits_);
+    static Tensor randint(size_t rows_, size_t cols_, std::vector<axon::dtype::i32> limits_);
 
     // Transpose
     Tensor T() const;
 
     // Create a column vector
-    static Tensor column(std::initializer_list<axon_dtype::f64> init_list);
+    static Tensor column(std::initializer_list<axon::dtype::f64> init_list);
 
     // Create a row vector
-    static Tensor row(std::initializer_list<axon_dtype::f64> init_list);
+    static Tensor row(std::initializer_list<axon::dtype::f64> init_list);
 
 
     // * IO
@@ -160,12 +169,21 @@ public:
     Tensor operator/=(const double val_);
 };
 
+// Operators to handle scalar + tensor operations
+
+Tensor operator+ (axon::dtype::f64 scalar, const Tensor& tensor);
+Tensor operator- (axon::dtype::f64 scalar, const Tensor& tensor);
+Tensor operator* (axon::dtype::f64 scalar, const Tensor& tensor);
+Tensor operator/ (axon::dtype::f64 scalar, const Tensor& tensor);
+
+// Operator to check if two tensors are equal
+bool operator== (const Tensor& a, const Tensor& b);
 
 void print(const Tensor& t);
 
-axon_dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b);
+axon::dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b);
 
-axon_dtype::f64 dot(const Tensor& a, const Tensor& b); 
+axon::dtype::f64 dot(const Tensor& a, const Tensor& b); 
 
 Tensor matmul(const Tensor& a, const Tensor& b);
 

@@ -3,51 +3,11 @@
 // MIT License
 
 #include "../../include/Tensor.hpp"
+#include "../../include/private/OperationHelpers.hpp"
+
 
 Tensor Tensor::operator+ (const Tensor& other_) const {
-    // Check for compatibility
-    bool rows_compatible = ((this -> rows() == other_.rows()) || (this -> rows() == 1) || (other_.rows() == 1));
-    bool cols_compatible = ((this -> cols() == other_.cols()) || (this -> cols() == 1) || (other_.cols() == 1));
-    
-    if (!(rows_compatible && cols_compatible)) {
-        throw std::invalid_argument("Tensors not compatible for addition");
-    }
-
-    // Form the resultant Tensor
-    size_t result_rows = std::max(this -> rows(), other_.rows());
-    size_t result_cols = std::max(this -> cols(), other_.cols());
-    
-    Tensor result(result_rows, result_cols);
-
-    // Define the strides
-    size_t this_row_stride = (this -> rows() == 1) ? 0 : 1;
-    size_t this_col_stride = (this -> cols() == 1) ? 0 : 1;
-    size_t other_row_stride = (other_.rows() == 1) ? 0 : 1;
-    size_t other_col_stride = (other_.cols() == 1) ? 0 : 1;
-
-    // Define the indices 
-    size_t this_r = 0, this_c = 0;
-    size_t other_r = 0, other_c = 0;
-
-    for (size_t i = 0; i < result_rows; i++) {
-        // Reset the column indices after the column loop starts
-        this_c = 0;
-        other_c = 0;
-
-        for (size_t j = 0; j < result_cols; j++) {
-            result(i, j) = (*this)(this_r, this_c) + other_(other_r, other_c);
-
-            // Update the column indices after addition with the stride
-            this_c += this_col_stride;
-            other_c += other_col_stride;
-        }
-
-        // Update the row indices with the stride after the column loop completes
-        this_r += this_row_stride;
-        other_r += other_row_stride;
-    }
-
-    return result;
+    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::plus<axon::dtype::f64>());
 }
 
 Tensor Tensor::operator+= (const Tensor& other_) {
@@ -56,42 +16,7 @@ Tensor Tensor::operator+= (const Tensor& other_) {
 }
 
 Tensor Tensor::operator- (const Tensor& other_) const {
-    bool rows_compatible = ((this -> rows() == other_.rows()) || (this -> rows() == 1) || (other_.rows() == 1));
-    bool cols_compatible = ((this -> cols() == other_.cols()) || (this -> cols() == 1) || (other_.cols() == 1));
-
-    if(!(rows_compatible && cols_compatible)) {
-        throw std::invalid_argument("Tensors are not compatible for subtraction");
-    }
-
-    size_t result_rows = std::max(this -> rows(), other_.rows());
-    size_t result_cols = std::max(this -> cols(), other_.cols());
-
-    Tensor result(result_rows, result_cols);
-
-    size_t this_row_stride = (this -> rows() == 1) ? 0 : 1;
-    size_t this_col_stride = (this -> cols() == 1) ? 0 : 1;
-    size_t other_row_stride = (other_.rows() == 1) ? 0 : 1;
-    size_t other_col_stride = (other_.cols() == 1) ? 0 : 1;
-    
-    size_t this_r = 0, this_c = 0;
-    size_t other_r = 0, other_c = 0;
-
-    for (size_t i = 0; i < result_rows; i++) {
-        this_c = 0;
-        other_c = 0;
-
-        for (size_t j = 0; j < result_cols; j++) {
-            result(i, j) = (*this)(this_r, this_c) - other_(other_r, other_c);
-
-            this_c += this_col_stride;
-            other_c += other_col_stride;
-        }
-
-        this_r += this_row_stride;
-        other_r += other_row_stride;
-    }
-
-    return result;
+    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::minus<axon::dtype::f64>());
 }
 
 Tensor Tensor::operator-= (const Tensor& other_) {
@@ -100,42 +25,7 @@ Tensor Tensor::operator-= (const Tensor& other_) {
 }
 
 Tensor Tensor::operator* (const Tensor& other_) const {
-    bool rows_compatible = ((this -> rows() == other_.rows()) || (this -> rows() == 1) || (other_.rows() == 1));
-    bool cols_compatible = ((this -> cols() == other_.cols()) || (this -> cols() == 1) || (other_.cols() == 1));
-    
-    if (!(rows_compatible && cols_compatible)) {
-        throw std::invalid_argument("Tensors not compatible for addition");
-    }
-
-    size_t result_rows = std::max(this -> rows(), other_.rows());
-    size_t result_cols = std::max(this -> cols(), other_.cols());
-    
-    Tensor result(result_rows, result_cols);
-
-    size_t this_row_stride = (this -> rows() == 1) ? 0 : 1;
-    size_t this_col_stride = (this -> cols() == 1) ? 0 : 1;
-    size_t other_row_stride = (other_.rows() == 1) ? 0 : 1;
-    size_t other_col_stride = (other_.cols() == 1) ? 0 : 1;
-
-    size_t this_r = 0, this_c = 0;
-    size_t other_r = 0, other_c = 0;
-
-    for (size_t i = 0; i < result_rows; i++) {
-        this_c = 0;
-        other_c = 0;
-
-        for (size_t j = 0; j < result_cols; j++) {
-            result(i, j) = (*this)(this_r, this_c) * other_(other_r, other_c);
-
-            this_c += this_col_stride;
-            other_c += other_col_stride;
-        }
-
-        this_r += this_row_stride;
-        other_r += other_row_stride;
-    }
-
-    return result;
+    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::multiplies<axon::dtype::f64>());
 }
 
 Tensor Tensor::operator*= (const Tensor& other_) {
@@ -143,44 +33,10 @@ Tensor Tensor::operator*= (const Tensor& other_) {
     return (*this);
 }
 
+// ! NOTE: `std::divides` does not have an in-built assert to check for the divisor being zero
+// * Dividing by zero will result in `inf`
 Tensor Tensor::operator/ (const Tensor& other_) const {
-    bool rows_compatible = ((this -> rows() == other_.rows()) || (this -> rows() == 1) || (other_.rows() == 1));
-    bool cols_compatible = ((this -> cols() == other_.cols()) || (this -> cols() == 1) || (other_.cols() == 1));
-    
-    if (!(rows_compatible && cols_compatible)) {
-        throw std::invalid_argument("Tensors not compatible for addition");
-    }
-
-    size_t result_rows = std::max(this -> rows(), other_.rows());
-    size_t result_cols = std::max(this -> cols(), other_.cols());
-    
-    Tensor result(result_rows, result_cols);
-
-    size_t this_row_stride = (this -> rows() == 1) ? 0 : 1;
-    size_t this_col_stride = (this -> cols() == 1) ? 0 : 1;
-    size_t other_row_stride = (other_.rows() == 1) ? 0 : 1;
-    size_t other_col_stride = (other_.cols() == 1) ? 0 : 1;
-
-    size_t this_r = 0, this_c = 0;
-    size_t other_r = 0, other_c = 0;
-
-    for (size_t i = 0; i < result_rows; i++) {
-        this_c = 0;
-        other_c = 0;
-
-        for (size_t j = 0; j < result_cols; j++) {
-            assert(other_(other_r, other_c) != 0.0);
-            result(i, j) = (*this)(this_r, this_c) / other_(other_r, other_c);
-
-            this_c += this_col_stride;
-            other_c += other_col_stride;
-        }
-
-        this_r += this_row_stride;
-        other_r += other_row_stride;
-    }
-
-    return result;
+    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::divides<axon::dtype::f64>());
 }
 
 Tensor Tensor::operator/= (const Tensor& other_) {
@@ -256,12 +112,12 @@ Tensor Tensor::operator/=(const double val_) {
     return *this;
 }
 
-axon_dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b) {
+axon::dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b) {
     if (a.getShape() != b.getShape()) {
         throw std::invalid_argument("The shape must match for Frobenius Inner Product");
     }
 
-    axon_dtype::f64 result = 0.0;
+    axon::dtype::f64 result = 0.0;
     for (size_t i = 0; i < a.get_size(); i++) {
         result += a(i) * b(i);
     }
@@ -270,11 +126,11 @@ axon_dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b) {
 }
 
 
-axon_dtype::f64 dot(const Tensor& a, const Tensor& b) {
+axon::dtype::f64 dot(const Tensor& a, const Tensor& b) {
     if (a.get_size() != b.get_size()) {
         throw std::invalid_argument("The number of elements must be same for both Tensors to perform a dot product");
     }
-    axon_dtype::f64 result = 0.0;
+    axon::dtype::f64 result = 0.0;
 
     for (size_t i = 0; i < a.get_size(); i++) {
         result += a(i) * b(i);
@@ -282,6 +138,52 @@ axon_dtype::f64 dot(const Tensor& a, const Tensor& b) {
 
     return result;
 }
+
+Tensor operator+ (axon::dtype::f64 scalar, const Tensor& tensor) {
+    return tensor + scalar;
+}
+
+Tensor operator* (axon::dtype::f64 scalar, const Tensor& tensor) {
+    return tensor * scalar;
+}
+
+Tensor operator- (axon::dtype::f64 scalar, const Tensor& tensor) {
+    Tensor result(tensor.rows(), tensor.cols());
+    size_t t_size = tensor.get_size();
+
+    for (size_t i = 0; i < t_size; i++) {
+        result(i) = scalar - tensor(i);
+    }
+
+    return result;
+}
+
+Tensor operator/ (axon::dtype::f64 scalar, const Tensor& tensor) {
+    Tensor result(tensor.rows(), tensor.cols());
+    size_t t_size = tensor.get_size();
+    
+    for (size_t i = 0; i < t_size; i++) {
+        // * NOTE: tensor(i) can be 0, which would result in `inf`
+        result(i) = scalar / tensor(i);
+    }
+
+    return result;
+}
+
+bool operator== (const Tensor& a, const Tensor& b) {
+    if (a.getShape() != b.getShape()) {
+        throw std::invalid_argument("The shapes of the two tensors must match for this operation");
+    }
+
+    size_t size = a.get_size();
+    for (size_t i = 0; i < size; i++) {
+        if (std::abs(a(i) - b(i)) > axon::constants::eps) {
+            return false;
+        }         
+    }
+    return true;
+}
+
 
 // cache-friendly matmul
 Tensor matmul(const Tensor& a, const Tensor& b) {
