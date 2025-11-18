@@ -92,3 +92,12 @@ Tensor Tensor::column(std::initializer_list<axon::dtype::f64> init_list) {
     return result;
 }
 
+axon::dtype::f64 Tensor::sum() {
+    axon::dtype::f64 _sum = 0;
+    size_t tensor_size = this -> get_size();
+    for (size_t i = 0; i < tensor_size; i++) {
+        _sum += (*this)(i);
+    }
+    return _sum;
+}
+

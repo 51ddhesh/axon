@@ -129,6 +129,11 @@ public:
 
     void print_tensor() const;
 
+    // * Utils
+
+    // Return the sum of the elements of the `Tensor`
+    axon::dtype::f64 sum();
+
     // * Tensor Ops
 
     // Operations with other Tensors (Element wise)

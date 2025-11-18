@@ -192,9 +192,12 @@ int main() {
     print(b);
     std::cout << "---------------------------\n";
     
-    print(axon::math::maximum(a, b));
-    std::cout << "---------------------------\n";
-    print(axon::math::minimum(a, b));
+    // print(axon::math::maximum(a, b));
+    // std::cout << "---------------------------\n";
+    // print(axon::math::minimum(a, b));
+
+    std::cout << a.sum() << std::endl;
+    std::cout << b.sum() << std::endl;
 
     return 0;
 }
