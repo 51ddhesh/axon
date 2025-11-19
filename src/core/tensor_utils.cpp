@@ -92,7 +92,7 @@ Tensor Tensor::column(std::initializer_list<axon::dtype::f64> init_list) {
     return result;
 }
 
-axon::dtype::f64 Tensor::sum() {
+axon::dtype::f64 Tensor::sum() const {
     axon::dtype::f64 _sum = 0;
     size_t tensor_size = this -> get_size();
     for (size_t i = 0; i < tensor_size; i++) {
@@ -101,3 +101,27 @@ axon::dtype::f64 Tensor::sum() {
     return _sum;
 }
 
+Tensor Tensor::sum(int axis) const {
+    if (axis == 0) {
+        Tensor result(1, this -> cols());
+        for (size_t i = 0; i < this -> cols(); i++) {
+            axon::dtype::f64 col_sum = 0.0;
+            for (size_t j = 0; j < this -> rows(); j++) {
+                col_sum += (*this)(j, i);
+            }
+            result(0, i) = col_sum;
+        }
+        return result;
+    } else if (axis == 1) {
+        Tensor result(this -> rows(), 1);
+        for (size_t i = 0; i < this -> rows(); i++) {
+            axon::dtype::f64 row_sum = 0.0;
+            for (size_t j = 0; j < this -> cols(); j++) {
+                row_sum += (*this)(i, j);
+            }
+            result(i, 0) = row_sum;
+        }
+        return result;
+    }
+    throw std::invalid_argument("Axis must be 0 or 1");
+}

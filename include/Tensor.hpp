@@ -132,7 +132,20 @@ public:
     // * Utils
 
     // Return the sum of the elements of the `Tensor`
-    axon::dtype::f64 sum();
+    axon::dtype::f64 sum() const;
+
+    // Returns a column or a row as sum
+    // use index = 0 for row-wise (collapse rows)
+    // use index = 1 for column-wise (collapse columns)
+    // 
+    //    index = 1                     index = 0
+    // 
+    //  [[1, 2, 3],    [[6],       [[1, 2, 3], 
+    //   [4, 5, 6], =>  [15],  or   [4, 5, 6],  => [[12, 15, 18]] 
+    //   [7, 8, 9]]     [24]]       [7, 8, 9]]
+    // 
+    Tensor sum(int axis) const;
+
 
     // * Tensor Ops
 
@@ -185,6 +198,13 @@ Tensor operator/ (axon::dtype::f64 scalar, const Tensor& tensor);
 bool operator== (const Tensor& a, const Tensor& b);
 
 void print(const Tensor& t);
+
+template <typename _dtype>
+inline void print(_dtype val) {
+    if (std::is_same_v<_dtype, int> || std::is_same_v<_dtype, float> || std::is_same_v<_dtype, double>) {
+        std::cout << val << std::endl;
+    }
+}
 
 axon::dtype::f64 frobenius_inner_product(const Tensor& a, const Tensor& b);
 

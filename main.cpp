@@ -196,9 +196,8 @@ int main() {
     // std::cout << "---------------------------\n";
     // print(axon::math::minimum(a, b));
 
-    std::cout << a.sum() << std::endl;
-    std::cout << b.sum() << std::endl;
-
+    print(a.sum()); 
+    print(b.sum()); 
     return 0;
 }
 
