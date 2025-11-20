@@ -203,6 +203,8 @@ public:
         return _grad ? *_grad : Tensor::zeros(rows(), cols());
     }
 
+    friend Tensor matmul(const Tensor& a, const Tensor& b);
+
 };
 
 // Operators to handle scalar + tensor operations
