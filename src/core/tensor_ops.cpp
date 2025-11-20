@@ -6,8 +6,20 @@
 #include "../../include/private/OperationHelpers.hpp"
 
 
-Tensor Tensor::operator+ (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::plus<axon::dtype::f64>());
+Tensor operator+ (const Tensor& a, const Tensor& b) {
+    auto forward_op = std::plus<axon::dtype::f64>();
+    Tensor result = axon::private_helpers::binary_op_helper::_apply_binary_op(a, b, forward_op);
+    result._prev = {const_cast<Tensor*>(&a), const_cast<Tensor*>(&b)};
+
+    result._backward_fn = [pa = &a, pb = &b](Tensor* self) mutable {
+        // Apply chain rule 
+        // For addition, the gradient distributes
+        auto a_shape = pa -> getShape();
+        auto b_shape = pb -> getShape();
+        *(pa -> _grad) += axon::private_helpers::other::sum_to_shape(*(self -> _grad), a_shape);
+        *(pb -> _grad) += axon::private_helpers::other::sum_to_shape(*(self -> _grad), b_shape);
+    };
+    return result;
 }
 
 Tensor Tensor::operator+= (const Tensor& other_) {
@@ -15,34 +27,34 @@ Tensor Tensor::operator+= (const Tensor& other_) {
     return (*this);
 }
 
-Tensor Tensor::operator- (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::minus<axon::dtype::f64>());
-}
+// Tensor Tensor::operator- (const Tensor& other_) const {
+//     return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::minus<axon::dtype::f64>());
+// }
 
-Tensor Tensor::operator-= (const Tensor& other_) {
-    (*this) = (*this) - other_;
-    return (*this);
-}
+// Tensor Tensor::operator-= (const Tensor& other_) {
+//     (*this) = (*this) - other_;
+//     return (*this);
+// }
 
-Tensor Tensor::operator* (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::multiplies<axon::dtype::f64>());
-}
+// Tensor Tensor::operator* (const Tensor& other_) const {
+//     return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::multiplies<axon::dtype::f64>());
+// }
 
-Tensor Tensor::operator*= (const Tensor& other_) {
-    (*this) = (*this) * other_;
-    return (*this);
-}
+// Tensor Tensor::operator*= (const Tensor& other_) {
+//     (*this) = (*this) * other_;
+//     return (*this);
+// }
 
 // ! NOTE: `std::divides` does not have an in-built assert to check for the divisor being zero
 // * Dividing by zero will result in `inf`
-Tensor Tensor::operator/ (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::divides<axon::dtype::f64>());
-}
+// Tensor Tensor::operator/ (const Tensor& other_) const {
+//     return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::divides<axon::dtype::f64>());
+// }
 
-Tensor Tensor::operator/= (const Tensor& other_) {
-    (*this) = (*this) / other_;
-    return (*this);
-}
+// Tensor Tensor::operator/= (const Tensor& other_) {
+//     (*this) = (*this) / other_;
+//     return (*this);
+// }
 
 // Tensor Ops with Scalars
 
