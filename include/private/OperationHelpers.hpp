@@ -13,7 +13,6 @@
 
 namespace axon {
     namespace private_helpers {
-        
         namespace unary_op_helper {
             template <typename UnaryOp>
             Tensor _apply_unary_op(const Tensor& a, UnaryOp op) {
@@ -61,6 +60,20 @@ namespace axon {
                 return result;
             }
         } // namespace binary_op_helper
+
+        namespace other {
+            inline Tensor sum_to_shape(const Tensor& input, std::vector<size_t>& shape) {
+                if (input.getShape() == shape) return input;
+                Tensor result = input;
+                if (result.rows() != shape[0]) {
+                    result = result.sum(0);
+                }
+                if (result.cols() != shape[1]) {
+                    result = result.sum(1);
+                }
+                return result;
+            }
+        } // namespace other
 
     } // namespace private
 } // namespace axon

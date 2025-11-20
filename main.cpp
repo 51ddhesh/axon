@@ -185,20 +185,19 @@ int main() {
     
     // print(axon::math::pow(a, Tensor::zeros(1, 1)));
     
-    Tensor a = Tensor::randn(2, 2);
-    print(a);
-    std::cout << "---------------------------\n";
-    Tensor b = Tensor::randn(2, 2);
-    print(b);
-    std::cout << "---------------------------\n";
+    // Tensor a = Tensor::randn(2, 2);
+    // print(a);
+    // std::cout << "---------------------------\n";
+    // Tensor b = Tensor::randn(2, 2);
+    // print(b);
+    // std::cout << "---------------------------\n";
     
     // print(axon::math::maximum(a, b));
     // std::cout << "---------------------------\n";
     // print(axon::math::minimum(a, b));
-
-    print(a.sum()); 
-    print(b.sum()); 
+    
+    // print(a.sum()); 
+    // print(b.sum());
+    
     return 0;
 }
-
-
