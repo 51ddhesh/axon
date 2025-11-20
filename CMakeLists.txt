@@ -20,6 +20,7 @@ add_library(axon
     src/math/comparisons.cpp
     src/math/unary_ops.cpp
     src/math/binary_ops.cpp
+    src/nn/autograd/backward.cpp
 )
 
 target_include_directories(axon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

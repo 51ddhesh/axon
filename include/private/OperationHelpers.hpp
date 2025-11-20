@@ -62,7 +62,7 @@ namespace axon {
         } // namespace binary_op_helper
 
         namespace other {
-            inline Tensor sum_to_shape(const Tensor& input, std::vector<size_t>& shape) {
+            inline Tensor sum_to_shape(const Tensor& input, const std::vector<size_t>& shape) {
                 if (input.getShape() == shape) return input;
                 Tensor result = input;
                 if (result.rows() != shape[0]) {
