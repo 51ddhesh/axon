@@ -4,10 +4,23 @@
 
 #include "../../include/Tensor.hpp"
 #include "../../include/private/OperationHelpers.hpp"
+#include "../../include/TensorMath.hpp"
 
+Tensor operator+ (const Tensor& a, const Tensor& b) {
+    auto forward_op = std::plus<axon::dtype::f64>();
+    Tensor result = axon::private_helpers::binary_op_helper::_apply_binary_op(a, b, forward_op);
+    result._prev = { const_cast<Tensor*>(&a), const_cast<Tensor*>(&b) };
 
-Tensor Tensor::operator+ (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::plus<axon::dtype::f64>());
+    result._backward_fn = [pa = &a, pb = &b](Tensor* self) mutable {
+        // c = a + b
+        // dc/da = 1
+        // dc/db = 1
+        // Apply chain rule 
+        // For addition, the gradient distributes
+        *(pa -> _grad) += axon::private_helpers::other::sum_to_shape(*(self -> _grad), pa -> getShape());
+        *(pb -> _grad) += axon::private_helpers::other::sum_to_shape(*(self -> _grad), pb -> getShape());
+    };
+    return result;
 }
 
 Tensor Tensor::operator+= (const Tensor& other_) {
@@ -15,8 +28,21 @@ Tensor Tensor::operator+= (const Tensor& other_) {
     return (*this);
 }
 
-Tensor Tensor::operator- (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::minus<axon::dtype::f64>());
+Tensor operator- (const Tensor& a, const Tensor& b) {
+    auto forward_op = std::minus<axon::dtype::f64>();
+    Tensor result = axon::private_helpers::binary_op_helper::_apply_binary_op(a, b, forward_op);
+    result._prev = { const_cast<Tensor*>(&a), const_cast<Tensor*>(&b) };
+
+    result._backward_fn = [pa = &a, pb = &b](Tensor* self) mutable {
+        // c = a - b
+        // dc / da = 1
+        // dc / db = -1
+
+        auto grad_b = *(self -> _grad) * -1;
+
+        *(pa -> _grad) += axon::private_helpers::other::sum_to_shape(*(self -> _grad), pa -> getShape());
+        *(pb -> _grad) += axon::private_helpers::other::sum_to_shape(grad_b, pb -> getShape());
+    };
 }
 
 Tensor Tensor::operator-= (const Tensor& other_) {
@@ -24,8 +50,24 @@ Tensor Tensor::operator-= (const Tensor& other_) {
     return (*this);
 }
 
-Tensor Tensor::operator* (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::multiplies<axon::dtype::f64>());
+Tensor operator* (const Tensor& a, const Tensor& b) {
+    auto forward_op = std::multiplies<axon::dtype::f64>();
+    Tensor result = axon::private_helpers::binary_op_helper::_apply_binary_op(a, b, forward_op);
+    result._prev = { const_cast<Tensor*>(&a), const_cast<Tensor*>(&b) };
+
+    result._backward_fn = [pa = &a, pb = &b](Tensor* self) mutable {
+        // c = a * b
+        // dc / da = b
+        // dc / db = a
+        // Applu chain rule
+        auto grad_a = *(self -> _grad) * (*pb);
+        auto grad_b = *(self -> _grad) * (*pa);
+
+        *(pa -> _grad) += axon::private_helpers::other::sum_to_shape(grad_a, pa -> getShape());
+        *(pb -> _grad) += axon::private_helpers::other::sum_to_shape(grad_b, pb -> getShape());
+    };
+
+    return result;
 }
 
 Tensor Tensor::operator*= (const Tensor& other_) {
@@ -35,8 +77,24 @@ Tensor Tensor::operator*= (const Tensor& other_) {
 
 // ! NOTE: `std::divides` does not have an in-built assert to check for the divisor being zero
 // * Dividing by zero will result in `inf`
-Tensor Tensor::operator/ (const Tensor& other_) const {
-    return axon::private_helpers::binary_op_helper::_apply_binary_op((*this), other_, std::divides<axon::dtype::f64>());
+Tensor operator/ (const Tensor& a, const Tensor& b) {
+    auto forward_op = std::divides<axon::dtype::f64>();
+    Tensor result = axon::private_helpers::binary_op_helper::_apply_binary_op(a, b, forward_op);
+    result._prev = { const_cast<Tensor*>(&a), const_cast<Tensor*>(&b) };
+
+    result._backward_fn = [pa = &a, pb = &b](Tensor* self) mutable {
+        // c = a / b = a * (b ^ -1)
+        // dc / da = b ^ -1 = 1 / b
+        // dc / db = -a / b ^ 2;
+    
+        auto grad_a = *(self -> _grad) / (*pb);
+        auto grad_b = *(self -> _grad) * (-1 * (*pa) / axon::math::pow((*pb), 2.0));
+
+        *(pa -> _grad) += axon::private_helpers::other::sum_to_shape(grad_a, pa -> getShape());
+        *(pb -> _grad) += axon::private_helpers::other::sum_to_shape(grad_b, pb -> getShape());
+    };
+
+    return result;
 }
 
 Tensor Tensor::operator/= (const Tensor& other_) {
@@ -207,6 +265,16 @@ Tensor matmul(const Tensor& a, const Tensor& b) {
             }
         }
     }
+
+    result._prev = { const_cast<Tensor*>(&a), const_cast<Tensor*>(&b) };
+
+    result._backward_fn = [pa = &a, pb = &b](Tensor* self) mutable {
+        // Gradient for A = current @ b.T
+        *(pa -> _grad) += matmul(*(self -> _grad), pb -> T());
+    
+        // Gradient for B = a.T @ current
+        *(pb -> _grad) += matmul(pa -> T(), *(self -> _grad));
+    };
 
     return result;
 }

@@ -10,6 +10,9 @@
 #include <initializer_list>
 #include <assert.h>
 #include <cmath>
+#include <functional>
+#include <memory>
+#include <unordered_set>
 
 namespace axon {
     namespace dtype {
@@ -32,7 +35,22 @@ private:
     std::vector<size_t> _shape;
     std::vector<size_t> _strides;
 
+    // The parent Tensors used to create this tensor
+    std::vector<Tensor*> _prev;
+    // Compute the gradient for parent Tensors
+    std::function<void(Tensor*)> _backward_fn;
+    // shared_ptr to a Tensor that will hold the gradient
+    // Handles memory management on its own
+    std::shared_ptr<Tensor> _grad;
+
     void compute_strides();
+    void build_topo(std::vector<Tensor*>& sorted, std::unordered_set<Tensor*>& visited);
+
+    friend Tensor operator+ (const Tensor& a, const Tensor& b);    
+    friend Tensor operator- (const Tensor& a, const Tensor& b);
+    friend Tensor operator* (const Tensor& a, const Tensor& b);
+    friend Tensor operator/ (const Tensor& a, const Tensor& b);
+    friend Tensor matmul(const Tensor& a, const Tensor& b);
 
 public:
 
@@ -149,15 +167,6 @@ public:
 
     // * Tensor Ops
 
-    // Operations with other Tensors (Element wise)
-    Tensor operator+(const Tensor& other) const;
-
-    Tensor operator-(const Tensor& other) const;
-    
-    Tensor operator*(const Tensor& other) const;
-
-    Tensor operator/(const Tensor& other) const;
-
     // Operations with scalars
     Tensor operator+(const double val_) const;
     
@@ -185,6 +194,17 @@ public:
     Tensor operator*=(const double val_);
     
     Tensor operator/=(const double val_);
+
+
+    // autograd
+    void backward();
+    // Get the grad of the Tensor
+    inline Tensor grad() const {
+        return _grad ? *_grad : Tensor::zeros(rows(), cols());
+    }
+
+    friend Tensor matmul(const Tensor& a, const Tensor& b);
+
 };
 
 // Operators to handle scalar + tensor operations

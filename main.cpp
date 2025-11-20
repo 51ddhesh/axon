@@ -199,5 +199,25 @@ int main() {
     // print(a.sum()); 
     // print(b.sum());
     
+    Tensor a = Tensor::ones(2, 2);
+    Tensor b = Tensor::randn(2, 2);
+    
+    print(a);
+    std::cout << "---------------------------\n";
+    print(b);
+    std::cout << "---------------------------\n";
+    
+    Tensor c = a + b;
+    print(c);
+    std::cout << "---------------------------\n";
+    c.backward();
+
+    std::cout << "a.grad = ";
+    print(a.grad());
+    std::cout << "b.grad = ";
+    print(b.grad());
+    std::cout << "c.grad = ";
+    print(c.grad());
+
     return 0;
 }
