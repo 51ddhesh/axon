@@ -3,6 +3,44 @@
 
 [**`AXON`**](https://github.com/51ddhesh/axon/) is a simple deep learning library in the process inspired from `PyTorch`.
 
+---
+
+## Project Structure
+
+```
+axon/
+ ├── README.md
+ ├── CMakeLists.txt
+ ├── LICENSE
+ ├── main.cpp
+ ├── include/
+ │   ├── Activations.hpp
+ │   ├── Linear.hpp
+ │   ├── LossFunctions.hpp
+ │   ├── Sequential.hpp
+ │   ├── Tensor.hpp
+ │   ├── TensorMath.hpp
+ │   └── private/
+ │       └── OperationHelpers.hpp
+ ├── src/
+ │   ├── core/
+ │   │   ├── tensor_core.cpp
+ │   │   ├── tensor_ops.cpp
+ │   │   └── tensor_utils.cpp
+ │   ├── math/
+ │   │   ├── binary_ops.cpp
+ │   │   ├── comparisons.cpp
+ │   │   └── unary_ops.cpp
+ │   └── nn/
+ │       ├── activations.cpp
+ │       ├── linear.cpp
+ │       ├── loss.cpp
+ │       ├── sequential.cpp
+ │       └── autograd/
+ │           └── backward.cpp
+ └── utils/
+     └── random_.hpp
+```
 
 --- 
 
