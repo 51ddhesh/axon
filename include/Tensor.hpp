@@ -37,6 +37,10 @@ namespace axon {
     namespace activation {
         Tensor relu(const Tensor& input);
     }
+
+    namespace math {
+        Tensor pow(const Tensor& base, axon::dtype::f64 exponent);
+    }
 }
 
 
@@ -62,6 +66,7 @@ private:
     friend Tensor operator/ (const Tensor& a, const Tensor& b);
     friend Tensor matmul(const Tensor& a, const Tensor& b);
     friend Tensor axon::activation::relu(const Tensor& input);
+    friend Tensor axon::math::pow(const Tensor& base, axon::dtype::f64 exponent);
 
 public:
 
