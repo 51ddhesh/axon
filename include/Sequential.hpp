@@ -19,10 +19,12 @@ public:
     void add(const Linear& layer);
 
     // Forward pass -> `torch` style
-    Tensor linear(const Tensor& input) const;
+    Tensor linear(const Tensor& input);
 
     // Forward pass -> `tf` style
-    Tensor forward(const Tensor& input) const;
+    Tensor forward(const Tensor& input);
+
+    std::vector<Tensor*> parameters();
 };
 
 #endif // AXON_SEQUENTIAL_HPP

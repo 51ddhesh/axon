@@ -6,38 +6,32 @@
 #include <limits>
 #include <cmath>
 
-double axon_loss::mse(const Tensor& y_pred, const Tensor& y_true) {
+Tensor axon::loss::mse(const Tensor& y_pred, const Tensor& y_true) {
     if (y_pred.getShape() != y_true.getShape()) {
         throw std::invalid_argument("The shapes of the two tensors must match");
     }
 
-    double total_err = 0.0;
-    double diff = 0.0;
-    for (size_t i = 0; i < y_true.get_size(); i++) {
-        diff = y_pred(i) - y_true(i);
-        total_err += diff * diff;
-    }
+    Tensor diff = y_pred - y_true;
 
-    return total_err / y_true.get_size();
+    Tensor squared_diff = axon::math::pow(diff, 2.0);
+    Tensor sum_sq = squared_diff.sum();
+
+    return sum_sq * (1.0 / y_true.get_size());
 }
 
 // Assumes that y_true is one-hot encoded 
 // for a single sample, L = -sum (true_label * ln(predicted))
-// In axon_loss::cce, we return the average loss per sample
-double axon_loss::cce(const Tensor& y_pred, const Tensor& y_true) {
+// In axon::loss::cce, we return the average loss per sample
+Tensor axon::loss::cce(const Tensor& y_pred, const Tensor& y_true) {
     if (y_pred.getShape() != y_true.getShape()) {
         throw std::invalid_argument("The shapes of the two tensors must match");
     }
 
-    double total_err = 0.0;
-    // Small value to avoid ln(0) -> -inf
-    const double eps = 1e-9;
+    Tensor y_pred_safe = y_pred + axon::constants::eps;
+    Tensor log_preds = axon::math::ln(y_pred_safe);
 
-    for (size_t i = 0; i < y_true.get_size(); i++) {
-        if (y_true(i) == 1.0) {
-            total_err += std::log(y_pred(i) + eps);
-        }
-    }
+    Tensor terms = y_true * log_preds;
+    Tensor sum = terms.sum();
 
-    return -total_err / y_true.rows();
+    return (sum / static_cast<axon::dtype::f64>(y_true.rows()));
 }

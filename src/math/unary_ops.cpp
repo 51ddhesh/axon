@@ -26,7 +26,18 @@ Tensor axon::math::exp(const Tensor& input) {
 }
 
 Tensor axon::math::ln(const Tensor& input) {
-    return axon::private_helpers::unary_op_helper::_apply_unary_op(input, [](axon::dtype::f64 val) { return std::log(val); });
+    Tensor result = axon::private_helpers::unary_op_helper::_apply_unary_op(input, [](axon::dtype::f64 val) { return std::log(val); });
+    result._prev = { const_cast<Tensor*>(&input) };
+
+    result._backward_fn = [p_input = &input](Tensor* self) {
+        /*
+            f(x) = ln(x)
+            f'(x) = 1 / x
+        */
+
+        *(p_input -> _grad) += *(self -> _grad) / (*p_input);
+    };
+    return result;
 }
 
 Tensor axon::math::log10(const Tensor& input) {
@@ -38,7 +49,25 @@ Tensor axon::math::log2(const Tensor& input) {
 }
 
 Tensor axon::math::pow(const Tensor& base, axon::dtype::f64 exponent) {
-    return axon::private_helpers::unary_op_helper::_apply_unary_op(base, [exponent](axon::dtype::f64 val) { return std::pow(val, exponent); });
+    auto forward_op = [exponent](axon::dtype::f64 val) { return std::pow(val, exponent); };
+
+    Tensor result = axon::private_helpers::unary_op_helper::_apply_unary_op(base, forward_op);
+
+    result._prev = { const_cast<Tensor*>(&base) };
+    result._backward_fn = [p_base = &base, exponent](Tensor* self) {
+        /*
+            f(x) = x ^ n
+            f'(x) = n * x ^ (n - 1)
+        */
+        auto derivative = [exponent](axon::dtype::f64 val) {
+            return exponent * std::pow(val, exponent - 1.0);
+        };
+
+        Tensor local_derivative = axon::private_helpers::unary_op_helper::_apply_unary_op(*p_base, derivative);
+        
+        *(p_base -> _grad) += *(self -> _grad) * local_derivative;
+    }; 
+    return result;
 }
 
 Tensor axon::math::pow(axon::dtype::f64 base, const Tensor& exponent) {
