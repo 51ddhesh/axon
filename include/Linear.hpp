@@ -21,10 +21,13 @@ public:
     Linear(size_t input_size, size_t output_size, std::function<Tensor(const Tensor&)> activation);
 
     // torch-styled forward pass
-    Tensor linear(const Tensor& input) const;
+    Tensor linear(const Tensor& input);
 
     // Tensorflow styled forward pass
-    Tensor forward(const Tensor& input) const;
+    Tensor forward(const Tensor& input);
+
+    // Method to get the pointers to weights and bias
+    std::vector<Tensor*> parameters();
 };
 
 #endif // AXON_LINEAR_HPP

@@ -16,7 +16,7 @@ Linear::Linear(size_t input_size, size_t output_size, std::function<Tensor(const
 
 // `torch` style forward pass 
 // Main implementation of the forward pass
-Tensor Linear::linear(const Tensor& input) const {
+Tensor Linear::linear(const Tensor& input) {
     // Perform the matmul input @ weights
     Tensor result = matmul(input, _weights);
     result += _bias;
@@ -24,6 +24,10 @@ Tensor Linear::linear(const Tensor& input) const {
 }
 
 // `tf` style forward pass
-Tensor Linear::forward(const Tensor& input) const {
+Tensor Linear::forward(const Tensor& input) {
     return this -> linear(input);
+}
+
+std::vector<Tensor*> Linear::parameters() {
+    return { &_weights, &_bias };
 }
