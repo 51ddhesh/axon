@@ -134,3 +134,9 @@ Tensor Tensor::sum(int axis) const {
     }
     throw std::invalid_argument("Axis must be 0 or 1");
 }
+
+void Tensor::zero_grad() {
+    if (_grad) {
+        std::fill(_grad -> _data.begin(), _grad -> _data.end(), 0.0);
+    }
+}

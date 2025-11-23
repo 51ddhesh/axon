@@ -175,6 +175,8 @@ public:
     inline Tensor grad() const {
         return _grad ? *_grad : Tensor::zeros(rows(), cols());
     }
+
+    void zero_grad();
 };
 
 // Operators to handle scalar + tensor operations
