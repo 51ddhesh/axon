@@ -43,6 +43,7 @@ Tensor operator- (const Tensor& a, const Tensor& b) {
         *(pa -> _grad) += axon::private_helpers::other::sum_to_shape(*(self -> _grad), pa -> getShape());
         *(pb -> _grad) += axon::private_helpers::other::sum_to_shape(grad_b, pb -> getShape());
     };
+    return result;
 }
 
 Tensor Tensor::operator-= (const Tensor& other_) {

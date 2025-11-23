@@ -92,13 +92,22 @@ Tensor Tensor::column(std::initializer_list<axon::dtype::f64> init_list) {
     return result;
 }
 
-axon::dtype::f64 Tensor::sum() const {
+Tensor Tensor::sum() const {
     axon::dtype::f64 _sum = 0;
     size_t tensor_size = this -> get_size();
     for (size_t i = 0; i < tensor_size; i++) {
         _sum += (*this)(i);
     }
-    return _sum;
+
+    Tensor result(1, 1, _sum);
+
+    result._prev = { const_cast<Tensor*>(this) };
+    result._backward_fn = [this_ptr = const_cast<Tensor*>(this)](Tensor* self) {
+        axon::dtype::f64 grad_val = (*(self -> _grad))(0, 0);
+        Tensor grad_update = Tensor::ones(this_ptr -> rows(), this_ptr -> cols()) * grad_val;
+        *(this_ptr -> _grad) += grad_update;
+    };
+    return result;
 }
 
 Tensor Tensor::sum(int axis) const {
