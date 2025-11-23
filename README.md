@@ -1,5 +1,6 @@
 # Axon
-[**`AXON`**](https://github.com/51ddhesh/axon/) is a simple deep learning library in the process inspired from `PyTorch`.
+- Branch: axon/minimal
+[**`AXON`**](https://github.com/51ddhesh/axon/tree/minimal) is a simple deep learning library in the process inspired from `PyTorch`.
 
 
 ### Prerequisites
