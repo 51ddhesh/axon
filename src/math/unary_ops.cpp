@@ -26,7 +26,18 @@ Tensor axon::math::exp(const Tensor& input) {
 }
 
 Tensor axon::math::ln(const Tensor& input) {
-    return axon::private_helpers::unary_op_helper::_apply_unary_op(input, [](axon::dtype::f64 val) { return std::log(val); });
+    Tensor result = axon::private_helpers::unary_op_helper::_apply_unary_op(input, [](axon::dtype::f64 val) { return std::log(val); });
+    result._prev = { const_cast<Tensor*>(&input) };
+
+    result._backward_fn = [p_input = &input](Tensor* self) {
+        /*
+            f(x) = ln(x)
+            f'(x) = 1 / x
+        */
+
+        *(p_input -> _grad) += *(self -> _grad) / (*p_input);
+    };
+    return result;
 }
 
 Tensor axon::math::log10(const Tensor& input) {
