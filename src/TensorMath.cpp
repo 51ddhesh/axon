@@ -1,3 +1,7 @@
+// src/TensorMath.cpp
+// github.com/51ddhesh/axon
+// MIT License
+
 #include "axon/Tensor.hpp"
 #include "axon/ShapeUtils.hpp"
 #include <cmath>
