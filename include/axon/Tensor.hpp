@@ -49,7 +49,7 @@ private:
     // private constructor 
     Tensor(std::shared_ptr<TensorStorage> storage, 
            const std::vector<size_t>& shape,
-           const std::vector<size_t>& stides,
+           const std::vector<size_t>& strides,
            size_t offset,
            const std::vector<Tensor>& prev = {}
     );
