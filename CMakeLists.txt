@@ -9,11 +9,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -O3)
 endif()
 
-add_library(axon
-    src/axon.cpp
-)
+include_directories(include)
 
-target_include_directories(axon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(axon
+    src/Tensor.cpp
+)
 
 add_executable(ax main.cpp)
 
