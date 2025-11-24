@@ -90,17 +90,33 @@ void Tensor::print_meta() const {
     std::cout << ">" << std::endl;
 }
 
-// ! Assumes is_contiguous
-// TODO: Check if is_contiguous
 void Tensor::print() const {
-    if (!storage_) return;
-    const double* p = data_ptr();
-    size_t total_size = size();
-    std::cout << "Tensor: [";
-    for (size_t i = 0; i < total_size; i++) {
-        std::cout << p[i] << ',';
+    size_t total_elements = size();
+    
+    if (is_contiguous()) {
+        const double* ptr = data_ptr();
+        std::cout << "Tensor (Contiguous): [ ";
+        for(size_t i=0; i<total_elements; ++i) {
+            std::cout << ptr[i] << " ";
+        }
+        std::cout << "]" << std::endl;
+        return;
     }
-    std::cout << ']' << std::endl;
+
+    // Slow path for Strided/Views
+    std::cout << "Tensor (Strided): [ ";
+    
+    std::vector<size_t> coords(shape_.size(), 0);
+    for (size_t i = 0; i < total_elements; ++i) {
+        std::cout << (*this)(coords) << " "; 
+
+        for (int dim = shape_.size() - 1; dim >= 0; --dim) {
+            coords[dim]++;
+            if (coords[dim] < shape_[dim]) break;
+            coords[dim] = 0;
+        }
+    }
+    std::cout << "]" << std::endl;
 }
 
 // * ACCESSORS
@@ -163,7 +179,11 @@ Tensor Tensor::reshape(const std::vector<size_t>& new_shape) const {
 
     if (current_size != new_size) throw std::runtime_error("Reshape size mismatch");
 
-    // TODO: check is_contiguous
+    if (!is_contiguous()) {
+        Tensor c = this -> contiguous();
+        return c.reshape(new_shape);
+    }
+
     Tensor t(storage_, new_shape, {}, 0, prev_);
     t.compute_strides();
     return t;
@@ -193,6 +213,45 @@ Tensor Tensor::transpose(size_t dim0, size_t dim1) const {
     std::iota(dims.begin(), dims.end(), 0);
     std::swap(dims[dim0], dims[dim1]);
     return permute(dims);
+}
+
+// * MEMORY LAYOUT
+bool Tensor::is_contiguous() const {
+    size_t z = 1;
+    size_t shape_size = shape_.size();
+    for (int i = shape_size - 1; i >= 0; i--) {
+        if (strides_[i] != z) return false;
+        z *= shape_[i];
+    }
+    return true;
+}
+
+Tensor Tensor::contiguous() const {
+    if (is_contiguous()) {
+        return *this;
+    }
+
+    Tensor compact = Tensor(shape_);
+
+    size_t total_elements = size();
+    std::vector<size_t> coords(shape_.size(), 0);
+
+    double* target_ptr = compact.data_ptr();
+    
+    for (size_t i = 0; i < total_elements; i++) {
+        double val = (*this)(coords);
+        target_ptr[i] = val;
+
+        for (int dim = shape_.size() - 1; dim >= 0; dim--) {
+            coords[dim]++;
+            if (coords[dim] < shape_[dim]) {
+                break;
+            } else {
+                coords[dim] = 0;
+            }
+        }
+    }
+    return compact;
 }
 
 } // namespace axon

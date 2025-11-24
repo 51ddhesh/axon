@@ -83,6 +83,10 @@ public:
     const double* data_ptr() const;
     double* grad_ptr();
 
+    // * MEMORY LAYOUT
+    bool is_contiguous() const;
+    Tensor contiguous() const;
+
     // * N-DIM 
     // Get reference
     double& operator() (const std::vector<size_t>& coords);
