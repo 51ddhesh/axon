@@ -1,3 +1,7 @@
+// src/Tensor.cpp
+// github.com/51ddhesh/axon
+// MIT License
+
 #include "axon/Tensor.hpp"
 #include <numeric>
 #include <iomanip>
@@ -86,11 +90,12 @@ void Tensor::print_meta() const {
     std::cout << ">" << std::endl;
 }
 
+// ! Assumes is_contiguous
+// TODO: Check if is_contiguous
 void Tensor::print() const {
     if (!storage_) return;
     const double* p = data_ptr();
     size_t total_size = size();
-
     std::cout << "Tensor: [";
     for (size_t i = 0; i < total_size; i++) {
         std::cout << p[i] << ',';
@@ -121,6 +126,73 @@ Tensor Tensor::zeros(const std::vector<size_t>& shape) {
 
 Tensor Tensor::ones(const std::vector<size_t>& shape) {
     return Tensor(shape, 1.0);
+}
+
+// * N-DIM Access
+double& Tensor::operator() (const std::vector<size_t>& coords) {
+    if (coords.size() != shape_.size()) {
+        throw std::runtime_error("Ranks mismatch...");
+    }
+
+    size_t idx = offset_;
+    size_t coords_size = coords.size();
+    for (size_t i = 0; i < coords_size; i++) {
+        idx += coords[i] * strides_[i];
+    }
+    return storage_ -> data[idx];
+}
+
+double Tensor::operator() (const std::vector<size_t>& coords) const {
+    if (coords.size() != shape_.size()) {
+        throw std::runtime_error("Ranks mismatch...");
+    }
+
+    size_t idx = offset_;
+    size_t coords_size = coords.size();
+    for (size_t i = 0; i < coords_size; i++) {
+        idx += coords[i] * strides_[i];
+    }
+    return storage_ -> data[idx];
+}
+
+// * VIEWS
+Tensor Tensor::reshape(const std::vector<size_t>& new_shape) const {
+    size_t current_size = size();
+    size_t new_size = 1;
+    for (size_t s : new_shape) new_size *= s;
+
+    if (current_size != new_size) throw std::runtime_error("Reshape size mismatch");
+
+    // TODO: check is_contiguous
+    Tensor t(storage_, new_shape, {}, 0, prev_);
+    t.compute_strides();
+    return t;
+}
+
+Tensor Tensor::permute(const std::vector<size_t>& dims) const {
+    if (dims.size() != shape_.size()) {
+        throw std::runtime_error("Permute rank mismatch");
+    }
+
+    size_t shape_size = shape_.size();
+    size_t dim_size = dims.size();
+
+    std::vector<size_t> new_shape(shape_size);
+    std::vector<size_t> new_strides(shape_size);
+
+    for (size_t i = 0; i < dim_size; i++) {
+        new_shape[i] = shape_[dims[i]];
+        new_strides[i] = strides_[dims[i]];
+    }
+
+    return Tensor(storage_, new_shape, new_strides, offset_, prev_);
+}
+
+Tensor Tensor::transpose(size_t dim0, size_t dim1) const {
+    std::vector<size_t> dims(shape_.size());
+    std::iota(dims.begin(), dims.end(), 0);
+    std::swap(dims[dim0], dims[dim1]);
+    return permute(dims);
 }
 
 } // namespace axon

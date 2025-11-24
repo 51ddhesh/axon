@@ -83,6 +83,17 @@ public:
     const double* data_ptr() const;
     double* grad_ptr();
 
+    // * N-DIM 
+    // Get reference
+    double& operator() (const std::vector<size_t>& coords);
+    double operator() (const std::vector<size_t>& coords) const;
+
+    // Views (Zero Copy)
+    Tensor reshape(const std::vector<size_t>& new_shape) const;
+    Tensor permute(const std::vector<size_t>& dims) const;
+    Tensor transpose(size_t dim0, size_t dim1) const;
+
+
     // * FACTORY FUNCTIONS
     static Tensor zeros(const std::vector<size_t>& shape);
     static Tensor ones(const std::vector<size_t>& shape);
