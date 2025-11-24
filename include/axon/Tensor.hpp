@@ -64,6 +64,9 @@ public:
         grad_fn_ = fn;
     }
 
+    void backward();
+    void zero_grad();
+
     // * CONSTRUCTORS
     // Empty / default
     Tensor();
