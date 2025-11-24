@@ -54,7 +54,16 @@ private:
            const std::vector<Tensor>& prev = {}
     );
 
+    using BackwardFn = std::function<void()>;
+    BackwardFn grad_fn_;
+
 public:
+
+    // * GRAD
+    void set_backward_fn(BackwardFn fn) {
+        grad_fn_ = fn;
+    }
+
     // * CONSTRUCTORS
     // Empty / default
     Tensor();
@@ -105,6 +114,15 @@ public:
     // * UTILS
     void print() const;
     void print_meta() const;
+
+    // * REDUCTIONS
+    Tensor sum() const;
+
+    // * MATH OPERATORS
+    Tensor operator+ (const Tensor& other) const;
+    Tensor operator* (const Tensor& other) const;
+    Tensor operator- (const Tensor& other) const;
+    Tensor operator- () const;
 };
 
 } // namespace axon

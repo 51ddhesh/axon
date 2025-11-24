@@ -13,6 +13,7 @@ include_directories(include)
 
 add_library(axon
     src/Tensor.cpp
+    src/TensorMath.cpp
 )
 
 add_executable(ax main.cpp)
