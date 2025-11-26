@@ -130,6 +130,12 @@ public:
     Tensor operator* (const Tensor& other) const;
     Tensor operator- (const Tensor& other) const;
     Tensor operator- () const;
+
+
+    // * OPERATIONS 
+
+    // Matrix multiplication
+    Tensor matmul(const Tensor& other) const;
 };
 
 } // namespace axon

@@ -109,6 +109,101 @@ Tensor Tensor::sum(size_t dim) const {
 }
 
 
+// * OPERATIONS
+
+// ! ONLY SUPPORTS 2 DIMENSIONAL TENSORS
+// Matrix Multiplication
+Tensor Tensor::matmul(const Tensor& other) const {
+    // TODO: Add N-Dim support for matmul
+    if (shape_.size() != 2 || other.shape_.size() != 2) {
+        throw std::runtime_error("Only 2D support available for now");
+    }
+
+    // A: I x J, B: J x K, C: I x K (C = A x B)
+    if (shape_[1] != other.shape_[0]) {
+        throw std::runtime_error("Matrix shapes mismatch");
+    }
+
+    size_t M = shape_[0];
+    size_t K = shape_[1];
+    size_t N = other.shape_[1];
+
+    Tensor out({M, N}, 0.0);
+
+    Tensor A = is_contiguous() ? *this : this -> contiguous();
+    Tensor B = other.is_contiguous() ? other : other.contiguous();
+
+    const double* a_ptr = A.data_ptr();
+    const double* b_ptr = B.data_ptr();
+    double* out_ptr = out.data_ptr();
+
+    for (size_t m = 0; m < M; m++) {
+        for (size_t n = 0; n < N; n++) {
+            double sum = 0.0;
+            for (size_t k = 0; k < K; k++) {
+                sum += a_ptr[m * K + k] * b_ptr[k * N + n];
+            }
+            out_ptr[m * N + n] = sum;
+        }
+    }
+
+    out.prev_.push_back(*this);
+    out.prev_.push_back(other);
+
+    Tensor self = *this;
+    Tensor rhs = other;
+
+    out.set_backward_fn([out, self, rhs]() mutable {
+        /*
+            Gradient formula:
+            C = A @ B
+            dl/dA = dl/dC @ B.T
+            dl/dB = A.T @ dl/dC
+        */
+
+        Tensor grad_out({out.shape()[0], out.shape()[1]}, 0.0);
+        std::copy(out.grad_ptr(), out.grad_ptr() + out.size(), grad_out.data_ptr());
+        
+        // Calculate dL/dA
+        Tensor B_T = rhs.transpose(0, 1);
+        Tensor d_self = grad_out.matmul(B_T); 
+        
+        // Accumulate into self.grad
+        if (!d_self.is_contiguous()) {
+            d_self = d_self.contiguous();
+        } 
+        
+        double* dst = self.grad_ptr();
+        double* src = d_self.data_ptr();
+
+        size_t len = self.size();
+        for(size_t i = 0; i < len; i++) {
+            dst[i] += src[i];
+        }
+        
+        // Calculate dL/dB
+        Tensor A_T = self.transpose(0, 1);
+        Tensor d_rhs = A_T.matmul(grad_out);
+        
+        // Accumulate into rhs.grad
+        if (!d_rhs.is_contiguous()) {
+            d_rhs = d_rhs.contiguous();
+        } 
+        
+        dst = rhs.grad_ptr();
+        src = d_rhs.data_ptr();
+
+        len = rhs.size();
+        for(size_t i = 0; i < len; i++) {
+            dst[i] += src[i];
+        } 
+    });
+
+    return out;
+}
+
+
+
 // * OPERATOR IMPLEMENTATIONS
 
 Tensor Tensor::operator+ (const Tensor& other) const {
