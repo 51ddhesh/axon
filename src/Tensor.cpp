@@ -6,6 +6,8 @@
 #include <numeric>
 #include <iomanip>
 #include <stdexcept>
+#include <algorithm>
+#include <unordered_set>
 
 namespace axon {
 
@@ -252,6 +254,53 @@ Tensor Tensor::contiguous() const {
         }
     }
     return compact;
+}
+
+void Tensor::zero_grad() {
+    if (storage_) {
+        std::fill(storage_ -> grad.begin(), storage_ -> grad.end(), 0.0);
+    }
+}
+
+void Tensor::backward() {
+    std::vector<Tensor> order;
+    std::unordered_set<TensorStorage*> visited;
+
+    std::function<void(const Tensor&)> build_order = 
+        [&](const Tensor& node) {
+            if (!node.storage_) {
+                return;
+            }
+
+            if (visited.count(node.storage_.get())) {
+                return;
+            }
+
+            // perform DFS
+            visited.insert(node.storage_.get());
+            for (const auto& parent : node.prev_) {
+                build_order(parent);
+            }
+            order.push_back(node);
+        };
+
+    build_order(*this);
+    std::reverse(order.begin(), order.end());
+
+    // seed the gradient at the start (dL/dLoss = 1.0)
+    // assuming it is a scalar loss
+    if (this -> size() != 1) {
+        std::cerr << "Warning: Calling backward() on non-scalar Tensor. Seeding with 1.0" << std::endl;
+    }
+
+    std::fill(storage_ -> grad.begin(), storage_ -> grad.end(), 1.0);
+
+    // Execute the chain rule
+    for (Tensor& node : order) {
+        if (node.grad_fn_) {
+            node.grad_fn_();
+        }
+    }
 }
 
 } // namespace axon

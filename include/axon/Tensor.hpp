@@ -64,6 +64,9 @@ public:
         grad_fn_ = fn;
     }
 
+    void backward();
+    void zero_grad();
+
     // * CONSTRUCTORS
     // Empty / default
     Tensor();
@@ -116,13 +119,26 @@ public:
     void print_meta() const;
 
     // * REDUCTIONS
+    // Returns the sum of all the elements in the Tensor
     Tensor sum() const;
+
+    // Returns the sum along a specific dimension
+    Tensor sum(size_t dim) const;
 
     // * MATH OPERATORS
     Tensor operator+ (const Tensor& other) const;
     Tensor operator* (const Tensor& other) const;
     Tensor operator- (const Tensor& other) const;
     Tensor operator- () const;
+
+
+    // * OPERATIONS 
+
+    // Matrix multiplication
+    Tensor matmul(const Tensor& other) const;
+
+    // * ACTIVATIONS
+    Tensor relu() const;
 };
 
 } // namespace axon
