@@ -394,4 +394,49 @@ Tensor Tensor::sum() const {
     return out;
 }
 
+
+// * ACTIVATION FUNCTIONS
+Tensor Tensor::relu() const {
+    Tensor out(shape_);
+
+    Tensor input = is_contiguous() ? *this : this -> contiguous();
+
+    const double* in_ptr = input.data_ptr();
+    double* out_ptr = out.data_ptr();
+    size_t len = input.size();
+
+    for (size_t i = 0; i < len; i++) {
+        out_ptr[i] = (in_ptr[i] > 0.0) ? in_ptr[i] : 0.0; 
+    }
+
+    out.prev_.push_back(*this);
+
+    Tensor self = *this;
+    out.set_backward_fn([out, self]() mutable {
+        // dl/dx = dl/dy = (x > 0) ? 1 : 0
+        Tensor grad_out = Tensor(out.shape());
+        std::copy(out.grad_ptr(), out.grad_ptr() + out.size(), grad_out.data_ptr());
+        Tensor in_cont = self.is_contiguous() ? self : self.contiguous();
+
+        const double* x = in_cont.data_ptr();
+        const double* dout = grad_out.data_ptr();
+        double* dx = self.grad_ptr();
+
+        if (self.is_contiguous()) {
+            size_t n = self.size();
+            for (size_t i = 0; i < n; i++) {
+                if (x[i] > 0.0) {
+                    dx[i] += dout[i];
+                }
+            }
+        } else {
+            // TODO:
+            std::cerr << "No implementation for non-contiguous input" << std::endl;
+        }
+    });
+    return out;
+}
+
+
+
 } // namespace axon

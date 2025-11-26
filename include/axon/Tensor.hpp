@@ -136,6 +136,9 @@ public:
 
     // Matrix multiplication
     Tensor matmul(const Tensor& other) const;
+
+    // * ACTIVATIONS
+    Tensor relu() const;
 };
 
 } // namespace axon
