@@ -119,7 +119,11 @@ public:
     void print_meta() const;
 
     // * REDUCTIONS
+    // Returns the sum of all the elements in the Tensor
     Tensor sum() const;
+
+    // Returns the sum along a specific dimension
+    Tensor sum(size_t dim) const;
 
     // * MATH OPERATORS
     Tensor operator+ (const Tensor& other) const;
