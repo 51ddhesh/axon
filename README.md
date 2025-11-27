@@ -2,6 +2,7 @@
 
 A simple deep learning library inspired from PyTorch in C++.
 <br>
+
 ## Usage:
 
 The [`main.cpp`](./main.cpp) contains a simple XOR MLP Model. To train it, follow the instructions below.
@@ -23,3 +24,9 @@ cmake --build build/
 ```bash
 ./build/ax
 ```
+
+## Examples
+The [`tests/`](./tests/) contains examples.
+
+### LICENSE
+Licensed under the [`MIT License`](./LICENSE)
