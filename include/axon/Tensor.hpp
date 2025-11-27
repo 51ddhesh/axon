@@ -139,6 +139,7 @@ public:
 
     // * ACTIVATIONS
     Tensor relu() const;
+    Tensor sigmoid() const;
 };
 
 } // namespace axon

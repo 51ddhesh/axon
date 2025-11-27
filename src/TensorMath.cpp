@@ -1,7 +1,3 @@
-// src/TensorMath.cpp
-// github.com/51ddhesh/axon
-// MIT License
-
 #include "axon/Tensor.hpp"
 #include "axon/ShapeUtils.hpp"
 #include <cmath>
@@ -23,15 +19,18 @@ static void apply_binary_op(Tensor& out, const Tensor& a, const Tensor& b,
     
     size_t a_offset = ndim - a.shape().size();
     size_t b_offset = ndim - b.shape().size();
+
+    // OPTIMIZATION: Hoist allocation outside loop
+    std::vector<size_t> a_coord(a.shape().size());
+    std::vector<size_t> b_coord(b.shape().size());
+    size_t a_rank = a.shape().size();
+    size_t b_rank = b.shape().size();
     
     for (size_t i = 0; i < total_elements; ++i) {
-        std::vector<size_t> a_coord(a.shape().size());
-        std::vector<size_t> b_coord(b.shape().size());
-        
-        for (size_t d = 0; d < a.shape().size(); ++d) {
+        for (size_t d = 0; d < a_rank; ++d) {
             a_coord[d] = (a.shape()[d] == 1) ? 0 : coord[d + a_offset];
         }
-        for (size_t d = 0; d < b.shape().size(); ++d) {
+        for (size_t d = 0; d < b_rank; ++d) {
             b_coord[d] = (b.shape()[d] == 1) ? 0 : coord[d + b_offset];
         }
         
@@ -57,11 +56,6 @@ static Tensor unbroadcast(const Tensor& grad, const std::vector<size_t>& target_
     }
 
     // Handle dim mismatch
-    /*
-        If grad = (32, 10), target = (1, 10)
-        (32, 10) => sum(0) => (10, ) => reshape(1, 10)
-    */
-    // sum over dims where target == 1 and grad > 1
     for (size_t i = 0; i < target_shape.size(); i++) {
         if (target_shape[i] == 1 && out.shape()[i] > 1) {
             std::vector<size_t> kept_shape = out.shape();
@@ -80,25 +74,36 @@ Tensor Tensor::sum(size_t dim) const {
     std::vector<size_t> new_shape = shape_;
     new_shape.erase(new_shape.begin() + dim);
 
+    // If result is scalar, new_shape is empty.
     Tensor out = (new_shape.empty() ? Tensor({1}, 0.0) : Tensor::zeros(new_shape));
 
     size_t total = size();
     std::vector<size_t> in_coord(shape_.size(), 0);
+    
+    // The output coordinate has exactly one less dimension than input.
+    // If input was 1D, output is 0D (scalar), vector size 0.
+    size_t out_rank = (shape_.size() > 0) ? shape_.size() - 1 : 0;
+    std::vector<size_t> out_coord(out_rank, 0); 
 
     for (size_t i = 0; i < total; i++) {
-        std::vector<size_t> out_coord;
-        out_coord.reserve(shape_.size() - 1);
+        
+        // Construct Output Coordinate (Direct Array Write)
+        // We skip the dimension being summed.
+        size_t k = 0;
         for (size_t d = 0; d < shape_.size(); d++) {
-            if (d != dim) out_coord.push_back(in_coord[d]);
+            if (d != dim) {
+                out_coord[k] = in_coord[d];
+                k++;
+            }
         }
+        
+        // Accumulate
+        // Note: out(coord) handles the scalar case automatically 
+        // (if out_coord is empty, it returns data[0])
         double val = (*this)(in_coord);
-
-        if (out_coord.empty()) {
-            out_coord = {0};
-        }
-
         out(out_coord) += val;
 
+        // Increment Input Counter
         for (int d = shape_.size() - 1; d >= 0; d--) {
             in_coord[d]++;
             if (in_coord[d] < shape_[d]) break;
@@ -108,18 +113,12 @@ Tensor Tensor::sum(size_t dim) const {
     return out;
 }
 
-
 // * OPERATIONS
 
-// ! ONLY SUPPORTS 2 DIMENSIONAL TENSORS
-// Matrix Multiplication
 Tensor Tensor::matmul(const Tensor& other) const {
-    // TODO: Add N-Dim support for matmul
     if (shape_.size() != 2 || other.shape_.size() != 2) {
         throw std::runtime_error("Only 2D support available for now");
     }
-
-    // A: I x J, B: J x K, C: I x K (C = A x B)
     if (shape_[1] != other.shape_[0]) {
         throw std::runtime_error("Matrix shapes mismatch");
     }
@@ -154,49 +153,28 @@ Tensor Tensor::matmul(const Tensor& other) const {
     Tensor rhs = other;
 
     out.set_backward_fn([out, self, rhs]() mutable {
-        /*
-            Gradient formula:
-            C = A @ B
-            dl/dA = dl/dC @ B.T
-            dl/dB = A.T @ dl/dC
-        */
-
         Tensor grad_out({out.shape()[0], out.shape()[1]}, 0.0);
         std::copy(out.grad_ptr(), out.grad_ptr() + out.size(), grad_out.data_ptr());
         
-        // Calculate dL/dA
+        // dL/dA
         Tensor B_T = rhs.transpose(0, 1);
         Tensor d_self = grad_out.matmul(B_T); 
-        
-        // Accumulate into self.grad
-        if (!d_self.is_contiguous()) {
-            d_self = d_self.contiguous();
-        } 
+        if (!d_self.is_contiguous()) d_self = d_self.contiguous(); 
         
         double* dst = self.grad_ptr();
         double* src = d_self.data_ptr();
-
         size_t len = self.size();
-        for(size_t i = 0; i < len; i++) {
-            dst[i] += src[i];
-        }
+        for(size_t i = 0; i < len; i++) dst[i] += src[i];
         
-        // Calculate dL/dB
+        // dL/dB
         Tensor A_T = self.transpose(0, 1);
         Tensor d_rhs = A_T.matmul(grad_out);
-        
-        // Accumulate into rhs.grad
-        if (!d_rhs.is_contiguous()) {
-            d_rhs = d_rhs.contiguous();
-        } 
+        if (!d_rhs.is_contiguous()) d_rhs = d_rhs.contiguous(); 
         
         dst = rhs.grad_ptr();
         src = d_rhs.data_ptr();
-
         len = rhs.size();
-        for(size_t i = 0; i < len; i++) {
-            dst[i] += src[i];
-        } 
+        for(size_t i = 0; i < len; i++) dst[i] += src[i];
     });
 
     return out;
@@ -218,31 +196,22 @@ Tensor Tensor::operator+ (const Tensor& other) const {
     Tensor rhs = other;
 
     out.set_backward_fn([out, self, rhs]() mutable {
-        Tensor grad = Tensor(out.shape());
         Tensor grad_out = Tensor(out.shape());
         std::copy(out.grad_ptr(), out.grad_ptr() + out.size(), grad_out.data_ptr());
 
         Tensor grad_self = unbroadcast(grad_out, self.shape());
-    
+        if (!grad_self.is_contiguous()) grad_self = grad_self.contiguous();
+        
         double* self_g = self.grad_ptr();
-        if (!grad_self.is_contiguous()) {
-            grad_self = grad_self.contiguous();
-        }
         double* src_g = grad_self.data_ptr();
-
-        for (size_t i = 0; i < self.size(); i++) {
-            self_g[i] += src_g[i];
-        }
+        for (size_t i = 0; i < self.size(); i++) self_g[i] += src_g[i];
 
         Tensor grad_rhs = unbroadcast(grad_out, rhs.shape());
-        if (!grad_rhs.is_contiguous()) {
-            grad_rhs = grad_rhs.contiguous();
-        }
-        src_g = grad_rhs.data_ptr();
+        if (!grad_rhs.is_contiguous()) grad_rhs = grad_rhs.contiguous();
+        
         double* rhs_g = rhs.grad_ptr();
-        for (size_t i = 0; i < rhs.size(); i++) {
-            rhs_g[i] += src_g[i];
-        }
+        src_g = grad_rhs.data_ptr();
+        for (size_t i = 0; i < rhs.size(); i++) rhs_g[i] += src_g[i];
     }); 
 
     return out;
@@ -263,32 +232,19 @@ Tensor Tensor::operator-(const Tensor& other) const {
         Tensor grad_out = Tensor(out.shape());
         std::copy(out.grad_ptr(), out.grad_ptr() + out.size(), grad_out.data_ptr());
 
-        // Self: +1 * grad
         Tensor grad_self = unbroadcast(grad_out, self.shape());
-    
-        if (!grad_self.is_contiguous()) {
-            grad_self = grad_self.contiguous();
-        } 
-    
-        double* s_ptr = grad_self.data_ptr();
-        double* self_g = self.grad_ptr();
+        if (!grad_self.is_contiguous()) grad_self = grad_self.contiguous();
         
-        for(size_t i = 0; i < self.size(); i++) {
-            self_g[i] += s_ptr[i];
-        } 
+        double* self_g = self.grad_ptr();
+        double* s_ptr = grad_self.data_ptr();
+        for(size_t i = 0; i < self.size(); i++) self_g[i] += s_ptr[i];
 
-        // RHS: -1 * grad
         Tensor grad_rhs = unbroadcast(grad_out, rhs.shape());
+        if (!grad_rhs.is_contiguous()) grad_rhs = grad_rhs.contiguous();
 
-        if (!grad_rhs.is_contiguous()) {
-            grad_rhs = grad_rhs.contiguous();
-        } 
-
-        double* r_ptr = grad_rhs.data_ptr();
         double* rhs_g = rhs.grad_ptr();
-        for(size_t i = 0; i < rhs.size(); i++) {
-            rhs_g[i] -= r_ptr[i]; 
-        } 
+        double* r_ptr = grad_rhs.data_ptr();
+        for(size_t i = 0; i < rhs.size(); i++) rhs_g[i] -= r_ptr[i]; 
     });
 
     return out;
@@ -310,41 +266,24 @@ Tensor Tensor::operator*(const Tensor& other) const {
         std::copy(out.grad_ptr(), out.grad_ptr() + out.size(), grad_out.data_ptr());
 
         // dL/dSelf = Grad_Out * RHS
-        // Construct broadcasted RHS values
-        Tensor rhs_broad(out.shape());
-        // Use apply_binary_op to fill it? No, just use operator* logic.
-        
-        // Calculate Term for Self: (Grad * RHS) -> Unbroadcast
         Tensor term1(out.shape());
         apply_binary_op(term1, grad_out, rhs, [](double g, double r){ return g * r; });
         Tensor grad_self = unbroadcast(term1, self.shape());
         
-        if (!grad_self.is_contiguous()) {
-            grad_self = grad_self.contiguous();
-        } 
-
-        double* src = grad_self.data_ptr();
+        if (!grad_self.is_contiguous()) grad_self = grad_self.contiguous();
         double* dst = self.grad_ptr();
-        
-        for(size_t i = 0; i < self.size(); i++) {
-            dst[i] += src[i];
-        }
+        double* src = grad_self.data_ptr();
+        for(size_t i = 0; i < self.size(); i++) dst[i] += src[i];
 
-        // Calculate Term for RHS: (Grad * Self) -> Unbroadcast
+        // dL/dRHS = Grad_Out * Self
         Tensor term2(out.shape());
         apply_binary_op(term2, grad_out, self, [](double g, double s){ return g * s; });
         Tensor grad_rhs = unbroadcast(term2, rhs.shape());
 
-        if (!grad_rhs.is_contiguous()) {
-            grad_rhs = grad_rhs.contiguous();
-        }
-        
-        src = grad_rhs.data_ptr();
+        if (!grad_rhs.is_contiguous()) grad_rhs = grad_rhs.contiguous();
         dst = rhs.grad_ptr();
-        
-        for(size_t i = 0; i < rhs.size(); i++) {
-            dst[i] += src[i];
-        } 
+        src = grad_rhs.data_ptr();
+        for(size_t i = 0; i < rhs.size(); i++) dst[i] += src[i];
     });
 
     return out;
@@ -370,73 +309,84 @@ Tensor Tensor::sum() const {
         return c.sum(); 
     }
     
-    // Result is a scalar (1-element vector)
     Tensor out({1}, total);
-    
-    // 1. Connect Graph
     out.prev_.push_back(*this);
     
-    // 2. Backward
     Tensor self = *this;
     out.set_backward_fn([out, self]() mutable {
-        // Sum gradient: distributes the scalar gradient to ALL elements
-        // dL/dx_i = dL/dSum * 1.0
         double grad_val = out.grad_ptr()[0];
         double* self_g = self.grad_ptr();
         size_t n = self.size();
-        
-        //  assume standard tensor.
-        for(size_t i=0; i<n; ++i) {
-            self_g[i] += grad_val;
-        }
+        for(size_t i=0; i<n; ++i) self_g[i] += grad_val;
     });
     
     return out;
 }
 
+// Activations
 
-// * ACTIVATION FUNCTIONS
 Tensor Tensor::relu() const {
     Tensor out(shape_);
-
-    Tensor input = is_contiguous() ? *this : this -> contiguous();
-
+    Tensor input = is_contiguous() ? *this : this->contiguous();
+    
     const double* in_ptr = input.data_ptr();
     double* out_ptr = out.data_ptr();
     size_t len = input.size();
-
-    for (size_t i = 0; i < len; i++) {
-        out_ptr[i] = (in_ptr[i] > 0.0) ? in_ptr[i] : 0.0; 
+    
+    for(size_t i=0; i<len; ++i) {
+        out_ptr[i] = (in_ptr[i] > 0.0) ? in_ptr[i] : 0.0;
     }
-
+    
     out.prev_.push_back(*this);
-
+    
     Tensor self = *this;
     out.set_backward_fn([out, self]() mutable {
-        // dl/dx = dl/dy = (x > 0) ? 1 : 0
         Tensor grad_out = Tensor(out.shape());
         std::copy(out.grad_ptr(), out.grad_ptr() + out.size(), grad_out.data_ptr());
+        
         Tensor in_cont = self.is_contiguous() ? self : self.contiguous();
-
-        const double* x = in_cont.data_ptr();
-        const double* dout = grad_out.data_ptr();
-        double* dx = self.grad_ptr();
-
+        const double* x_ptr = in_cont.data_ptr();
+        const double* dout_ptr = grad_out.data_ptr();
+        double* dx_ptr = self.grad_ptr();
+        
         if (self.is_contiguous()) {
             size_t n = self.size();
-            for (size_t i = 0; i < n; i++) {
-                if (x[i] > 0.0) {
-                    dx[i] += dout[i];
-                }
+            for(size_t i=0; i<n; ++i) {
+                if (x_ptr[i] > 0.0) dx_ptr[i] += dout_ptr[i];
             }
-        } else {
-            // TODO:
-            std::cerr << "No implementation for non-contiguous input" << std::endl;
         }
     });
     return out;
 }
 
-
+Tensor Tensor::sigmoid() const {
+    Tensor out(shape_);
+    Tensor input = is_contiguous() ? *this : this->contiguous();
+    const double* in_ptr = input.data_ptr();
+    double* out_ptr = out.data_ptr();
+    size_t len = input.size();
+    
+    for(size_t i=0; i<len; ++i) {
+        out_ptr[i] = 1.0 / (1.0 + std::exp(-in_ptr[i]));
+    }
+    
+    out.prev_.push_back(*this);
+    Tensor self = *this;
+    out.set_backward_fn([out, self]() mutable {
+        Tensor grad_out = Tensor(out.shape());
+        std::copy(out.grad_ptr(), out.grad_ptr() + out.size(), grad_out.data_ptr());
+        
+        const double* y_ptr = out.data_ptr();
+        const double* dout_ptr = grad_out.data_ptr();
+        double* dx_ptr = self.grad_ptr();
+        size_t n = self.size();
+        
+        for(size_t i=0; i<n; ++i) {
+            double y = y_ptr[i];
+            dx_ptr[i] += dout_ptr[i] * (y * (1.0 - y));
+        }
+    });
+    return out;
+}
 
 } // namespace axon
