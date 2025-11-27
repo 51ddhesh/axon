@@ -6,8 +6,7 @@
 using namespace axon;
 
 int main() {
-    std::cout << "=== Axon v2.1 XOR Test (Sigmoid) ===" << std::endl;
-    
+    std::cout << "Testing Axon on XOR" << std::endl; 
     // Data
     Tensor X = {0,0, 0,1, 1,0, 1,1};
     X = X.reshape({4, 2});
