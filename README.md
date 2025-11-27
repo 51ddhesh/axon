@@ -24,6 +24,15 @@ cmake --build build/
 ```bash
 ./build/ax
 ```
+
+## "BENCHMARKS"
+
+1. XOR on `Axon`
+![](./assets/Axon_XOR_Test.png)
+
+2. XOR on `PyTorch`
+![](./assets/Torch_XOR_Test.png)
+
 ## Examples
 The [`tests/`](./tests/) contains examples.
 
