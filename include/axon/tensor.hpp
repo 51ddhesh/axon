@@ -58,15 +58,17 @@ namespace axon {
             return storage;
         }
 
+        Device device() const {
+            return storage -> device;
+        }
+
         float* data_ptr() {
-            return storage -> ptr() + offset;
+            return storage -> ptr<float>() + offset;
         }
-
+        
         const float* data_ptr() const {
-            return storage -> ptr() + offset;
+            return storage -> ptr<float>() + offset;
         }
-
-
 
         bool requires_grad() const {
             return state -> requires_grad;
