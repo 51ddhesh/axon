@@ -10,7 +10,7 @@ namespace axon {
     Tensor::Tensor(std::vector<int> shape) 
         : shape(shape), offset(0) {
         calculate_strides();
-        storage = std::make_shared<Storage>(size);
+        storage = std::make_shared<Storage>(size * sizeof(float));
         state = std::make_shared<TensorState>();
     }
 
@@ -49,16 +49,20 @@ namespace axon {
 
     Tensor Tensor::zeros(std::vector<int> shape) {
         Tensor t(shape);
-        if (t.size > 0) {
+        if (t.size > 0 && t.device().type == DeviceType::CPU) {
             std::memset(t.data_ptr(), 0, t.size * sizeof(float));
+        } else {
+            // TODO: call a CUDA kernel 
         }
         return t;
     }
 
     Tensor Tensor::ones(std::vector<int> shape) {
         Tensor t(shape);
-        if (t.size > 0) {
+        if (t.size > 0 && t.device().type == DeviceType::CPU) {
             std::fill(t.data_ptr(), t.data_ptr() + t.size, 1.0f);
+        } else {
+            // TODO: call a CUDA kernel
         }
         return t;
     }
@@ -84,11 +88,11 @@ namespace axon {
             flat += stride[i] * indices[i];
         }
         
-        if (flat < 0 || flat >= storage -> size) {
+        if (flat < 0 || (flat * sizeof(float))>= storage -> nbytes) {
             throw std::out_of_range("[AT] Error: Tensor::at() computed offset outside Storage bounds");
         }
 
-        return storage->data[flat];
+        return storage -> ptr<float>()[flat];
     }
 
     void print_recursive(const Tensor& t, int dim, int current_offset, std::vector<int>& indices) {
@@ -191,7 +195,9 @@ namespace axon {
         if (is_contiguous()) {
             // Deep copy
             Tensor out = Tensor::zeros(shape); // Allocates new storage
-            std::memcpy(out.data_ptr(), this->data_ptr(), size * sizeof(float));
+            if (device().type == DeviceType::CPU) {
+                std::memcpy(out.data_ptr(), this->data_ptr(), size * sizeof(float));
+            } 
             return out;
         } else {
             Tensor out = Tensor::zeros(shape);
