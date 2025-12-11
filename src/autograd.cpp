@@ -1,7 +1,7 @@
-#include "axon3/autograd.hpp"
-#include "axon3/tensor.hpp"
-#include "axon3/ops.hpp"
-#include "axon3/grad_mode.hpp" 
+#include "axon/autograd.hpp"
+#include "axon/tensor.hpp"
+#include "axon/ops.hpp"
+#include "axon/grad_mode.hpp" 
 #include <iostream>
 #include <unordered_set>
 #include <unordered_map>

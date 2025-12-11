@@ -1,6 +1,6 @@
 #pragma once
 
-#include "axon3/tensor.hpp"
+#include "axon/tensor.hpp"
 #include <memory>
 #include <vector>
 

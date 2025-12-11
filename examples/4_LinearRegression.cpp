@@ -1,5 +1,5 @@
-#include "axon3/tensor.hpp"
-#include "axon3/ops.hpp"
+#include "axon/tensor.hpp"
+#include "axon/ops.hpp"
 #include <iostream>
 #include <iomanip>
 

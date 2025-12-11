@@ -1,6 +1,6 @@
-#include "axon3/tensor.hpp"
-#include "axon3/nn.hpp"
-#include "axon3/ops.hpp"
+#include "axon/tensor.hpp"
+#include "axon/nn.hpp"
+#include "axon/ops.hpp"
 #include <iostream>
 #include <cassert>
 

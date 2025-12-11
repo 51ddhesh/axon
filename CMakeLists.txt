@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(axon3)
+project(axon)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -12,7 +12,7 @@ endif()
 
 include_directories(include)
 
-add_library(axon3 
+add_library(axon
     src/tensor.cpp
     src/kernels.cpp
     src/ops.cpp
@@ -22,4 +22,4 @@ add_library(axon3
 
 add_executable(ax main.cpp)
 
-target_link_libraries(ax axon3)
+target_link_libraries(ax axon)

@@ -1,5 +1,5 @@
-#include "axon3/tensor.hpp"
-#include "axon3/nn.hpp"
+#include "axon/tensor.hpp"
+#include "axon/nn.hpp"
 #include <iostream>
 
 int main() {

@@ -1,4 +1,4 @@
-#include "axon3/tensor.hpp"
+#include "axon/tensor.hpp"
 #include <iostream>
 #include <numeric>
 #include <algorithm>

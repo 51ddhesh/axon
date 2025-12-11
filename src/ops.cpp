@@ -1,7 +1,7 @@
-#include "axon3/ops.hpp"
-#include "axon3/kernels.hpp"    
-#include "axon3/autograd.hpp"
-#include "axon3/grad_mode.hpp"
+#include "axon/ops.hpp"
+#include "axon/kernels.hpp"    
+#include "axon/autograd.hpp"
+#include "axon/grad_mode.hpp"
 #include <functional>
 #include <stdexcept>
 #include <algorithm>
