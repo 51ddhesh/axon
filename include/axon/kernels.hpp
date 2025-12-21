@@ -2,48 +2,64 @@
 
 #include <cstddef>
 
-namespace axon::kernels {
-    void add_f32(size_t n, const float* a, const float* b, float* out) noexcept;    
-    void sub_f32(size_t n, const float* a, const float* b, float* out) noexcept;
-    void mul_f32(size_t n, const float* a, const float* b, float* out) noexcept;
-    void div_f32(size_t n, const float* a, const float* b, float* out) noexcept;
-    
-    void matmul_f32(size_t M, size_t N, size_t K, const float* a, const float* b, float* out) noexcept;
-    void relu_f32(size_t n, const float* input, float* out) noexcept;
-    void relu_backward_f32(size_t n, const float* input, const float* grad_out, float* grad_input) noexcept;
-    void log_softmax_f32(size_t rows, size_t cols, const float* input, float* out) noexcept;
-    void log_softmax_backward_f32(size_t rows, size_t cols, const float* grad_output, const float* output, float* grad_input) noexcept;
-    void gelu_f32(size_t n, const float* input, float* output) noexcept;
-    void gelu_backward_f32(size_t n, const float* input, const float* grad_out, float* grad_input) noexcept;
-    
-    void softmax_f32(size_t rows, size_t cols, const float* input, float* out) noexcept;
-    void softmax_backward_f32(size_t rows, size_t cols, const float* grad_output, const float* output, float* grad_input) noexcept;
+#if defined(_MSC_VER)
+    #define AXON_RESTRICT __restrict
+#elif defined(__GNUC__) || defined(__clang__)
+    #define AXON_RESTRICT __restrict__
+#else
+    #define AXON_RESTRICT
+#endif
 
-    void sum_f32(size_t n, const float* inp, float* out) noexcept;
-    void sum_dim_f32(size_t outer, size_t dim, size_t inner, const float* input, float* output) noexcept;
+namespace axon::kernels {
+    // Element-wise ops
+    void add_f32(size_t n, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept;    
+    void sub_f32(size_t n, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept;
+    void mul_f32(size_t n, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept;
+    void div_f32(size_t n, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept;
     
-    void sqrt_f32(size_t n, const float* input, float* output) noexcept;
-    void exp_f32(size_t n, const float* input, float* output) noexcept;
-    void neg_f32(size_t n, const float* input, float* output) noexcept;
+    // Matrix Multiplication
+    void matmul_f32(size_t M, size_t N, size_t K, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept;
     
+    // Activation & Others
+    void relu_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT out) noexcept;
+    void relu_backward_f32(size_t n, const float* AXON_RESTRICT input, const float* AXON_RESTRICT grad_out, float* AXON_RESTRICT grad_input) noexcept;
+    
+    void log_softmax_f32(size_t rows, size_t cols, const float* AXON_RESTRICT input, float* AXON_RESTRICT out) noexcept;
+    void log_softmax_backward_f32(size_t rows, size_t cols, const float* AXON_RESTRICT grad_output, const float* AXON_RESTRICT output, float* AXON_RESTRICT grad_input) noexcept;
+    
+    void gelu_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT output) noexcept;
+    void gelu_backward_f32(size_t n, const float* AXON_RESTRICT input, const float* AXON_RESTRICT grad_out, float* AXON_RESTRICT grad_input) noexcept;
+    
+    void softmax_f32(size_t rows, size_t cols, const float* AXON_RESTRICT input, float* AXON_RESTRICT out) noexcept;
+    void softmax_backward_f32(size_t rows, size_t cols, const float* AXON_RESTRICT grad_output, const float* AXON_RESTRICT output, float* AXON_RESTRICT grad_input) noexcept;
+
+    void sum_f32(size_t n, const float* AXON_RESTRICT inp, float* AXON_RESTRICT out) noexcept;
+    void sum_dim_f32(size_t outer, size_t dim, size_t inner, const float* AXON_RESTRICT input, float* AXON_RESTRICT output) noexcept;
+    
+    void sqrt_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT output) noexcept;
+    void exp_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT output) noexcept;
+    void neg_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT output) noexcept;
+    
+    // Embeddings & Norms
     void embedding_forward_f32(
         size_t vocab_size, size_t dim, size_t num_indices,
-        const float* weight, const float* indices, float* out
+        const float* AXON_RESTRICT weight, const float* AXON_RESTRICT indices, float* AXON_RESTRICT out
     ) noexcept;
     void embedding_backward_f32(
         size_t vocab_size, size_t dim, size_t num_indices,
-        const float* grad_output, const float* indices, float* grad_weight
+        const float* AXON_RESTRICT grad_output, const float* AXON_RESTRICT indices, float* AXON_RESTRICT grad_weight
     ) noexcept;
 
     void layernorm_forward_f32(
-        size_t rows, size_t cols, const float* input,
-        const float* gamma, const float* beta,
-        float* out, float eps
+        size_t rows, size_t cols, const float* AXON_RESTRICT input,
+        const float* AXON_RESTRICT gamma, const float* AXON_RESTRICT beta,
+        float* AXON_RESTRICT out, float eps
     ) noexcept;
     void layernorm_backward_f32(
         size_t rows, size_t cols,
-        const float* grad_out, const float* input,
-        const float* gamma, float eps,
-        float* grad_input, float* grad_gamma, float* grad_beta
+        const float* AXON_RESTRICT grad_out, const float* AXON_RESTRICT input,
+        const float* AXON_RESTRICT gamma, float eps,
+        float* AXON_RESTRICT grad_input, float* AXON_RESTRICT grad_gamma, float* AXON_RESTRICT grad_beta
     ) noexcept;
+
 } // namespace axon::kernels
