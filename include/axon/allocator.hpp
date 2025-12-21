@@ -23,11 +23,16 @@ namespace axon {
 
     class CPUAllocator : public Allocator {
     public:
+        static constexpr size_t ALIGNMENT = 32;
+        
         void* allocate(size_t nbytes) override {
-            // use _mm_malloc or aligned_alloc for AVX optimization
-            void* ptr = std::malloc(nbytes);
+            // use std::aligned_alloc 
+            // requires size to be a multiple of alignment
+            size_t padded_size = (nbytes + ALIGNMENT - 1) & ~(ALIGNMENT - 1); 
+            void* ptr = std::aligned_alloc(ALIGNMENT, padded_size);
+
             if (!ptr) {
-                throw std::runtime_error("CPU out of memory");
+                throw std::runtime_error("[ALLOCATOR] Error: CPU out of memory");
             }
 
             return ptr;
@@ -42,6 +47,7 @@ namespace axon {
     public:
         void* allocate(size_t nbytes) override {
             void* ptr = nullptr;
+            // CUDA allocation is 256 byte aligned by default
             if (cudaMalloc(&ptr, nbytes) != 0) {
                 throw std::runtime_error("GPU out of memory");
             }
@@ -63,7 +69,7 @@ namespace axon {
         } else if (device == DeviceType::CUDA) {
             return &cuda_alloc;
         } else {
-            throw std::runtime_error("Unknown allocator");
+            throw std::runtime_error("[ALLOCATOR] Error: Unknown allocator");
         }
     }
 
