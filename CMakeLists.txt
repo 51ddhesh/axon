@@ -18,7 +18,7 @@ include_directories(include)
 
 add_library(axon
     src/tensor.cpp
-    src/kernels.cpp
+    src/cpu_kernels.cpp
     src/ops.cpp
     src/autograd.cpp
     src/serialization.cpp
