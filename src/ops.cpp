@@ -122,7 +122,7 @@ namespace axon {
             Tensor inp_c = input.is_contiguous() ? input : input.contiguous();
             Tensor grad_out_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
             
-            kernels::relu_backward_f32(inp_c.numel(), inp_c.data_ptr(), grad_out_c.data_ptr(), grad_input.data_ptr());
+            kernels::cpu::relu_backward_f32(inp_c.numel(), inp_c.data_ptr(), grad_out_c.data_ptr(), grad_input.data_ptr());
             
             return {
                 grad_input
@@ -134,7 +134,7 @@ namespace axon {
         Tensor out = Tensor::zeros(t.get_shape());
         
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::relu_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        kernels::cpu::relu_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -153,7 +153,7 @@ namespace axon {
             Tensor grad_input = Tensor::zeros(input.get_shape());
             Tensor input_c = input.is_contiguous() ? input : input.contiguous();
             Tensor g_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
-            kernels::gelu_backward_f32(input_c.numel(), input_c.data_ptr(), g_c.data_ptr(), grad_input.data_ptr());
+            kernels::cpu::gelu_backward_f32(input_c.numel(), input_c.data_ptr(), g_c.data_ptr(), grad_input.data_ptr());
 
             return {
                 grad_input
@@ -164,7 +164,7 @@ namespace axon {
     Tensor gelu(Tensor t) {
         Tensor out = Tensor::zeros(t.get_shape());
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::gelu_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        kernels::cpu::gelu_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -190,7 +190,7 @@ namespace axon {
             Tensor out_c = output.is_contiguous() ? output : output.contiguous();
             Tensor g_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
 
-            kernels::log_softmax_backward_f32(rows, cols, g_c.data_ptr(), out_c.data_ptr(), grad_input.data_ptr());
+            kernels::cpu::log_softmax_backward_f32(rows, cols, g_c.data_ptr(), out_c.data_ptr(), grad_input.data_ptr());
             return {grad_input};
         }
     };
@@ -203,7 +203,7 @@ namespace axon {
         Tensor out = Tensor::zeros(t.get_shape());
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
         
-        kernels::log_softmax_f32(t.get_shape()[0], t.get_shape()[1], t_c.data_ptr(), out.data_ptr());
+        kernels::cpu::log_softmax_f32(t.get_shape()[0], t.get_shape()[1], t_c.data_ptr(), out.data_ptr());
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -336,7 +336,7 @@ namespace axon {
         Tensor out = Tensor::zeros(target_shape);
 
         if (a_ex.is_contiguous() && b_ex.is_contiguous() && out.is_contiguous()) {
-            kernels::add_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
+            kernels::cpu::add_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
         } else {
             dispatch_binary_op(a_ex, b_ex, out, [](float x, float y) { return x + y; });
         }
@@ -374,7 +374,7 @@ namespace axon {
         Tensor out = Tensor::zeros(target_shape);
 
         if (a_ex.is_contiguous() && b_ex.is_contiguous() && out.is_contiguous()) {
-            kernels::sub_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
+            kernels::cpu::sub_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
         } else {
             dispatch_binary_op(a_ex, b_ex, out, [](float x, float y) { return x - y; });
         }
@@ -409,7 +409,7 @@ namespace axon {
         Tensor out = Tensor::zeros(target_shape);
 
         if (a_ex.is_contiguous() && b_ex.is_contiguous() && out.is_contiguous()) {
-            kernels::mul_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
+            kernels::cpu::mul_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
         } else {
             dispatch_binary_op(a_ex, b_ex, out, [](float x, float y) { return x * y; });
         }
@@ -447,7 +447,7 @@ namespace axon {
         Tensor out = Tensor::zeros(target_shape);
 
         if (a_ex.is_contiguous() && b_ex.is_contiguous() && out.is_contiguous()) {
-            kernels::div_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
+            kernels::cpu::div_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
         } else {
             dispatch_binary_op(a_ex, b_ex, out, [](float x, float y) { return x / y; });
         }
@@ -474,7 +474,7 @@ namespace axon {
     Tensor neg(Tensor t) {
         Tensor out = Tensor::zeros(t.get_shape());
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::neg_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        kernels::cpu::neg_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
         
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -504,7 +504,7 @@ namespace axon {
     Tensor sqrt(Tensor t) {
         Tensor out = Tensor::zeros(t.get_shape());
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::sqrt_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        kernels::cpu::sqrt_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -530,7 +530,7 @@ namespace axon {
     Tensor exp(Tensor t) {
         Tensor out = Tensor::zeros(t.get_shape());
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::exp_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        kernels::cpu::exp_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -744,7 +744,7 @@ namespace axon {
                 pB = b_buf.data();
             }
 
-            kernels::matmul_f32(M, N, K, pA, pB, out_ptr_base + off_o);
+            kernels::cpu::matmul_f32(M, N, K, pA, pB, out_ptr_base + off_o);
             
             for (int i = static_cast<int>(batch_out.size()) - 1; i >= 0; i--) {
                 current_indices[i]++;
@@ -782,7 +782,7 @@ namespace axon {
         
         if (a.is_contiguous()) {
             // Fast Path: AVX Vectorized Sum
-            kernels::sum_f32(a.numel(), a.data_ptr(), out.data_ptr());
+            kernels::cpu::sum_f32(a.numel(), a.data_ptr(), out.data_ptr());
         } else {
             float val = sum_recursive(0, a, 0);
             out.data_ptr()[0] = val;
@@ -840,7 +840,7 @@ namespace axon {
         Tensor out = Tensor::zeros(out_shape);
 
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::sum_dim_f32(outer, target_dim_size, inner, t_c.data_ptr(), out.data_ptr());
+        kernels::cpu::sum_dim_f32(outer, target_dim_size, inner, t_c.data_ptr(), out.data_ptr());
 
         return out;
     }
@@ -860,7 +860,7 @@ namespace axon {
             size_t dim = weight.get_shape()[1];
             size_t num_idx = indices.numel();
 
-            kernels::embedding_backward_f32(vocab, dim, num_idx, grad_out_c.data_ptr(), idx_c.data_ptr(), grad_weight.data_ptr());
+            kernels::cpu::embedding_backward_f32(vocab, dim, num_idx, grad_out_c.data_ptr(), idx_c.data_ptr(), grad_weight.data_ptr());
 
             return {
                 Tensor::zeros(indices.get_shape()),
@@ -881,7 +881,7 @@ namespace axon {
 
         Tensor input_c = input.is_contiguous() ? input : input.contiguous();
 
-        kernels::embedding_forward_f32(
+        kernels::cpu::embedding_forward_f32(
             weight.get_shape()[0], weight.get_shape()[1],
             input.numel(), weight.data_ptr(),
             input_c.data_ptr(), out.data_ptr()
@@ -917,7 +917,7 @@ namespace axon {
             Tensor gam_c = gamma.is_contiguous() ? gamma : gamma.contiguous();
             Tensor g_out_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
 
-            kernels::layernorm_backward_f32(rows, cols, 
+            kernels::cpu::layernorm_backward_f32(rows, cols, 
                 g_out_c.data_ptr(), in_c.data_ptr(), gam_c.data_ptr(), eps,
                 grad_input.data_ptr(), grad_gamma.data_ptr(), grad_beta.data_ptr());
             
@@ -944,7 +944,7 @@ namespace axon {
         Tensor gam_c = gamma.is_contiguous() ? gamma : gamma.contiguous();
         Tensor bet_c = beta.is_contiguous() ? beta : beta.contiguous();
 
-        kernels::layernorm_forward_f32(rows, cols, in_c.data_ptr(), gam_c.data_ptr(), bet_c.data_ptr(), out.data_ptr(), eps);
+        kernels::cpu::layernorm_forward_f32(rows, cols, in_c.data_ptr(), gam_c.data_ptr(), bet_c.data_ptr(), out.data_ptr(), eps);
 
         if ((input.requires_grad() || gamma.requires_grad() || beta.requires_grad()) && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -971,7 +971,7 @@ namespace axon {
             Tensor out_c = output.is_contiguous() ? output : output.contiguous();
             Tensor gout_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
 
-            kernels::softmax_backward_f32(rows, cols, gout_c.data_ptr(), out_c.data_ptr(), grad_input.data_ptr());
+            kernels::cpu::softmax_backward_f32(rows, cols, gout_c.data_ptr(), out_c.data_ptr(), grad_input.data_ptr());
             
             return { grad_input };
         }
@@ -983,7 +983,7 @@ namespace axon {
         size_t rows = t.numel() / cols;
 
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::softmax_f32(rows, cols, t_c.data_ptr(), out.data_ptr());
+        kernels::cpu::softmax_f32(rows, cols, t_c.data_ptr(), out.data_ptr());
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
