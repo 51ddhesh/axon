@@ -2,47 +2,114 @@
 #include <numeric>
 #include <cmath>
 #include <limits>
+#include <cstring>
+#include <algorithm>
+#include <immintrin.h> // AVX2 / FMA
 
 namespace axon::kernels::cpu {
-    
-    void add_f32(size_t n, const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ out) noexcept {
-        for (size_t i = 0; i < n; i++) {
+
+    void add_f32(size_t n, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept {
+        size_t i = 0;
+        // process 8 floats at a time (8 * 32 = 256 bits)
+        for (; i + 8 <= n; i += 8) {
+            __m256 va = _mm256_loadu_ps(a + i);
+            __m256 vb = _mm256_loadu_ps(b + i);
+            _mm256_storeu_ps(out + i, _mm256_add_ps(va, vb));
+        }
+
+        // residual
+        for (; i < n; i++) {
             out[i] = a[i] + b[i];
         }
     }     
     
-    void sub_f32(size_t n, const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ out) noexcept {
-        for (size_t i = 0; i < n; i++) {
+    void sub_f32(size_t n, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept {
+        size_t i = 0;
+
+        for (; i + 8 <= n; i += 8) {
+            __m256 va = _mm256_loadu_ps(a + i);
+            __m256 vb = _mm256_loadu_ps(b + i);
+            _mm256_storeu_ps(out + i, _mm256_sub_ps(va, vb));            
+        }
+
+        for (; i < n; i++) {
             out[i] = a[i] - b[i];
         }
     }
     
-    void mul_f32(size_t n, const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ out) noexcept {
-        for (size_t i = 0; i < n; i++) {
+    void mul_f32(size_t n, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept {
+        size_t i = 0;
+        
+        for (; i + 8 <= n; i += 8) {
+            __m256 va = _mm256_loadu_ps(a + i);
+            __m256 vb = _mm256_loadu_ps(b + i);
+            _mm256_storeu_ps(out + i, _mm256_mul_ps(va, vb));
+        }
+        
+        for (; i < n; i++) {
             out[i] = a[i] * b[i];
         }
     }
+    
+    void div_f32(size_t n, const float* AXON_RESTRICT a, const float* AXON_RESTRICT b, float* AXON_RESTRICT out) noexcept {
+        size_t i = 0;
+    
+        for (; i + 8 <= n; i += 8) {
+            __m256 va = _mm256_loadu_ps(a + i);
+            __m256 vb = _mm256_loadu_ps(b + i);
+            _mm256_storeu_ps(out + i, _mm256_div_ps(va, vb));
+        }
 
+        for (; i < n; i++) {
+            out[i] = a[i] / b[i];
+        }
+    }
+
+    void fill_f32(size_t n, float value, float* AXON_RESTRICT out) noexcept {
+        size_t i = 0;
+        __m256 v = _mm256_set1_ps(value);
+
+        for (; i + 8 <= n; i += 8) {
+            _mm256_storeu_ps(out + i, v);
+        }
+
+        for (; i < n; i++) {
+            out[i] = value;
+        }
+    }
+    
     void matmul_f32(
-        size_t M, size_t N, size_t K, 
-        const float* __restrict__ a, 
-        const float* __restrict__ b, 
-        float* __restrict__ out) noexcept {
-        
-        for (size_t i = 0; i < M * N; ++i) out[i] = 0.0f;
+        size_t M, size_t N, size_t K,
+        const float* AXON_RESTRICT a, 
+        const float* AXON_RESTRICT b,
+        float* AXON_RESTRICT out) noexcept {
 
-        // Cache-friendly loop 
-        for (size_t i = 0; i < M; ++i) {
-            for (size_t k = 0; k < K; ++k) {
+        std::memset(out, 0, M * N * sizeof(float));
+
+        for (size_t i = 0; i < M; i++) {
+            for (size_t k = 0; k < K; k++) {
                 float val_a = a[i * K + k];
-                for (size_t j = 0; j < N; ++j) {
+                __m256 va = _mm256_set1_ps(val_a);
+
+                size_t j = 0;
+
+                for (; j + 8 <= N; j += 8) {
+                    __m256 vc = _mm256_loadu_ps(&out[i * N + j]);
+                    __m256 vb = _mm256_loadu_ps(&b[k * N + j]);
+                    // c = c + a * b
+                    vc = _mm256_fmadd_ps(va, vb, vc);
+                    _mm256_storeu_ps(&out[i * N + j], vc);
+                }
+                
+                for (; j < N; j++) {
                     out[i * N + j] += val_a * b[k * N + j];
                 }
             }
         }
     }
-
-    void sum_f32(size_t n, const float* __restrict__ inp, float* __restrict__ out) noexcept {
+        
+    
+    void sum_f32(size_t n, const float* AXON_RESTRICT inp, float* AXON_RESTRICT out) noexcept {
         float acc = 0.0f;
         for (size_t i = 0; i < n; i++) {
             acc += inp[i];
@@ -50,14 +117,20 @@ namespace axon::kernels::cpu {
         *out = acc;
     }
 
-    void relu_f32(size_t n, const float* __restrict__ input, float* __restrict__ out) noexcept {
-        for (size_t i = 0; i < n; ++i) {
+    void relu_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT out) noexcept {
+        size_t i = 0;
+        __m256 zero = _mm256_setzero_ps();
+        for (i; i + 8 <= n; i += 8) {
+            __m256 v = _mm256_loadu_ps(input + i);
+            _mm256_storeu_ps(out + i, _mm256_max_ps(v, zero));
+        }
+
+        for (; i < n; i++) {
             out[i] = input[i] > 0.0f ? input[i] : 0.0f;
         }
     }
 
-    
-    void relu_backward_f32(size_t n, const float* __restrict__ input, const float* __restrict__ grad_out, float* __restrict__ grad_inp) noexcept {
+    void relu_backward_f32(size_t n, const float* AXON_RESTRICT input, const float* AXON_RESTRICT grad_out, float* AXON_RESTRICT grad_inp) noexcept {
         for (size_t i = 0; i < n; ++i) {
             grad_inp[i] = (input[i] > 0.0f) ? grad_out[i] : 0.0f;
         }
@@ -128,22 +201,25 @@ namespace axon::kernels::cpu {
         }
     }
 
-    void div_f32(size_t n, const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ out) noexcept {
-        for (size_t i = 0; i < n; i++) {
-            out[i] = a[i] / b[i];
-        }
-    }
 
-    void sqrt_f32(size_t n, const float* __restrict__ input, float* __restrict__ output) noexcept {
-        for (size_t i = 0; i < n; i++) {
-            output[i] = std::sqrt(input[i]);
+    void sqrt_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT output) noexcept {
+        size_t i = 0;
+        for (; i + 8 <= n; i += 8) {
+            __m256 v = _mm256_loadu_ps(input + i);
+            _mm256_storeu_ps(output + i, _mm256_sqrt_ps(v));
         }
+
+        for (; i < n; i++) output[i] = std::sqrt(input[i]);
     }
     
-    void exp_f32(size_t n, const float* __restrict__ input, float* __restrict__ output) noexcept {
-        for (size_t i = 0; i < n; i++) {
-            output[i] = std::exp(input[i]);
+    void exp_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT output) noexcept {
+        size_t i = 0;
+        __m256 zero = _mm256_setzero_ps();
+        for (; i + 8 <= n; i += 8) {
+            __m256 v = _mm256_loadu_ps(input + i);
+            _mm256_storeu_ps(output + i, _mm256_sub_ps(zero, v));
         }
+        for (; i < n; i++) output[i] = -input[i];
     }
     
     void neg_f32(size_t n, const float* input, float* output) noexcept {
