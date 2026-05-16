@@ -1,10 +1,15 @@
 #include "axon/tensor.hpp"
 #include "axon/kernels.hpp"
+#include "axon/autograd.hpp"
+#include "axon/grad_mode.hpp"
+#include "axon/ops.hpp"
 #include <iostream>
 #include <numeric>
 #include <algorithm>
-#include <cstring> 
+#include <cstring>
 #include <stdexcept>
+#include <unordered_set>
+#include <unordered_map>
 
 namespace axon {
 
@@ -232,6 +237,79 @@ namespace axon {
         }
 
         return dst;
+    }
+
+    void Tensor::zero_grad() {
+        set_grad(nullptr);
+    }
+
+    void Tensor::add_grad(const Tensor& new_grad) {
+        auto g = get_grad();
+        if (!g) {
+            set_grad(std::make_shared<Tensor>(new_grad.contiguous()));
+        } else {
+            *g = axon::add(*g, new_grad);
+        }
+    }
+
+    void build_topo(Tensor* t,
+                    std::vector<GradFn*>& topo,
+                    std::unordered_set<GradFn*>& visited,
+                    std::unordered_map<GradFn*, Tensor*>& fn_to_tensor_map) {
+
+        auto fn = t->get_grad_fn().get();
+        if (!fn || visited.count(fn)) return;
+
+        visited.insert(fn);
+        fn_to_tensor_map[fn] = t;
+
+        for (auto& edge : fn->next_edges) {
+            if (edge.input_tensor) {
+                build_topo(edge.input_tensor.get(), topo, visited, fn_to_tensor_map);
+            }
+        }
+
+        topo.push_back(fn);
+    }
+
+    void Tensor::backward() {
+        auto _grad = get_grad();
+        if (!_grad) {
+            if (numel() != 1) {
+                throw std::runtime_error("[BACKWARD] Error: grad can only be created for scalar outputs. Use grad for non-scalar.");
+            }
+            _grad = std::make_shared<Tensor>(Tensor::ones(shape));
+            set_grad(_grad);
+        }
+
+        std::vector<GradFn*> topo_order;
+        std::unordered_set<GradFn*> visited;
+        std::unordered_map<GradFn*, Tensor*> fn_to_tensor_map;
+
+        build_topo(this, topo_order, visited, fn_to_tensor_map);
+
+        std::reverse(topo_order.begin(), topo_order.end());
+
+        for (GradFn* fn : topo_order) {
+            Tensor* output_tensor = fn_to_tensor_map[fn];
+            auto output_grad = output_tensor->get_grad();
+
+            if (!output_grad) continue;
+
+            auto input_grads = fn->apply(*output_grad);
+
+            if (input_grads.size() != fn->next_edges.size()) {
+                std::cerr << "[FATAL] Autograd Graph Mismatch.\n";
+                std::terminate();
+            }
+
+            for (size_t i = 0; i < fn->next_edges.size(); i++) {
+                auto& edge = fn->next_edges[i];
+                if (edge.input_tensor && edge.input_tensor->requires_grad()) {
+                    edge.input_tensor->add_grad(input_grads[i]);
+                }
+            }
+        }
     }
 
 }
