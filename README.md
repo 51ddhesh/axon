@@ -65,11 +65,9 @@ int main() {
     SGD optimizer({w1, b1, w2, b2}, 0.05f);
 
     for (int epoch = 0; epoch < 2000; ++epoch) {
-        auto h1 = relu(add(matmul(x, w1), b1));
-        auto out = add(matmul(h1, w2), b2);
-        auto diff = sub(out, y);
-        auto sq = mul(diff, diff);
-        auto loss = sum(sq);
+        auto h1 = relu(matmul(x, w1) + b1);
+        auto out = matmul(h1, w2) + b2;
+        auto loss = sum((out - y) * (out - y));
 
         optimizer.zero_grad();
         loss.backward();
