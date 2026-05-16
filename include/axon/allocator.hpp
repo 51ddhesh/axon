@@ -7,14 +7,26 @@
 #include <iostream>
 #include "device.hpp"
 
-extern "C" {
-    using cudaError_t = int;
-    cudaError_t cudaMalloc(void** devPtr, size_t size);
-    cudaError_t cudaFree(void* devPtr);
-    cudaError_t cudaMemcpy(void* dst, const void* src, size_t count, int kind);
-    cudaError_t cudaMemset(void* devPtr, int value, size_t count);
+
+namespace axon {
+    constexpr int MemcpyHostToHost = 0;
+    constexpr int MemcpyHostToDevice = 1;
+    constexpr int MemcpyDeviceToHost = 2;
+    constexpr int MemcpyDeviceToDevice = 3;
 }
 
+
+
+#ifndef __cuda_cuda_h__
+extern "C" {
+
+    using CudaErr = int;
+    CudaErr cudaMalloc(void** devPtr, size_t size);
+    CudaErr cudaFree(void* devPtr);
+    CudaErr cudaMemcpy(void* dst, const void* src, size_t count, int kind);
+    CudaErr cudaMemset(void* devPtr, int value, size_t count);
+}
+#endif
 
 namespace axon {
 

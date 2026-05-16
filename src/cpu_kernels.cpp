@@ -213,18 +213,24 @@ namespace axon::kernels::cpu {
     }
     
     void exp_f32(size_t n, const float* AXON_RESTRICT input, float* AXON_RESTRICT output) noexcept {
+        for (size_t i = 0; i < n; i++) {
+            output[i] = std::exp(input[i]);
+        }
+    }
+    
+    void neg_f32(size_t n, const float* input, float* output) noexcept {
         size_t i = 0;
+        
         __m256 zero = _mm256_setzero_ps();
+        
         for (; i + 8 <= n; i += 8) {
             __m256 v = _mm256_loadu_ps(input + i);
             _mm256_storeu_ps(output + i, _mm256_sub_ps(zero, v));
         }
-        for (; i < n; i++) output[i] = -input[i];
-    }
-    
-    void neg_f32(size_t n, const float* input, float* output) noexcept {
-        for (size_t i = 0; i < n; i++) {
-            output[i] = -(input[i]);
+
+        for (; i < n; i++) {
+            output[i] = -input[i];
+
         }
     }
 

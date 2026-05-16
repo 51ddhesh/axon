@@ -28,10 +28,10 @@ namespace axon {
         void calculate_strides();
 
     public:
-        Tensor(std::vector<int> shape);
+        Tensor(std::vector<int> shape, Device dev = Device(DeviceType::CPU));
 
-        static Tensor zeros(std::vector<int> shape);
-        static Tensor ones(std::vector<int> shape);
+        static Tensor zeros(std::vector<int> shape, Device dev = Device(DeviceType::CPU));
+        static Tensor ones(std::vector<int> shape, Device dev = Device(DeviceType::CPU));
 
         static Tensor from_storage(std::shared_ptr<Storage> storage,
             std::vector<int> shape, std::vector<int> stride,
@@ -114,6 +114,8 @@ namespace axon {
 
         Tensor contiguous() const;
 
+        
+        Tensor to(Device target_device) const;
     };
 
     void save_model(const std::vector<Tensor>& params, const std::string& filepath);

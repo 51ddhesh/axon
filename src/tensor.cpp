@@ -1,4 +1,5 @@
 #include "axon/tensor.hpp"
+#include "axon/kernels.hpp"
 #include <iostream>
 #include <numeric>
 #include <algorithm>
@@ -7,10 +8,10 @@
 
 namespace axon {
 
-    Tensor::Tensor(std::vector<int> shape) 
+    Tensor::Tensor(std::vector<int> shape, Device dev) 
         : shape(shape), offset(0) {
         calculate_strides();
-        storage = std::make_shared<Storage>(size * sizeof(float));
+        storage = std::make_shared<Storage>(size * sizeof(float), dev);
         state = std::make_shared<TensorState>();
     }
 
@@ -47,22 +48,22 @@ namespace axon {
         this -> size = running_size;
     }
 
-    Tensor Tensor::zeros(std::vector<int> shape) {
-        Tensor t(shape);
+    Tensor Tensor::zeros(std::vector<int> shape, Device dev) {
+        Tensor t(shape, dev);
         if (t.size > 0 && t.device().type == DeviceType::CPU) {
             std::memset(t.data_ptr(), 0, t.size * sizeof(float));
         } else {
-            // TODO: call a CUDA kernel 
+            t.storage -> allocator -> set_zero(t.data_ptr(), t.size * sizeof(float)); 
         }
         return t;
     }
 
-    Tensor Tensor::ones(std::vector<int> shape) {
-        Tensor t(shape);
+    Tensor Tensor::ones(std::vector<int> shape, Device dev) {
+        Tensor t(shape, dev);
         if (t.size > 0 && t.device().type == DeviceType::CPU) {
-            std::fill(t.data_ptr(), t.data_ptr() + t.size, 1.0f);
+            kernels::cpu::fill_f32(t.numel(), 1.0f, t.data_ptr());
         } else {
-            // TODO: call a CUDA kernel
+            kernels::gpu::fill_f32(t.numel(), 1.0f, t.data_ptr());
         }
         return t;
     }
@@ -206,4 +207,31 @@ namespace axon {
             return out;
         }
     }
+
+    Tensor Tensor::to(Device target_device) const {
+        if (device() == target_device) return *this;
+
+        // Ensure contiguous 
+        Tensor src = this -> is_contiguous() ? *this : this -> contiguous();
+        // Allocate memory on target device
+        Tensor dst = Tensor::zeros(src.get_shape(), target_device);
+
+        // Copy the data
+
+        // 1. CPU -> GPU
+        if (src.device().type == DeviceType::CPU && target_device.type == DeviceType::CUDA) {
+            cudaMemcpy(dst.data_ptr(), src.data_ptr(), src.numel() * sizeof(float), axon::MemcpyHostToDevice);
+        }
+        // 2. GPU -> CPU
+        else if (src.device().type == DeviceType::CUDA && target_device.type == DeviceType::CPU) {
+            cudaMemcpy(dst.data_ptr(), src.data_ptr(), src.numel() * sizeof(float), axon::MemcpyDeviceToHost);
+        }
+
+        else {
+            throw std::runtime_error("Multiple GPUs/CPUs not supported yet!!");
+        }
+
+        return dst;
+    }
+
 }

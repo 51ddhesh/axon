@@ -8,6 +8,20 @@
 
 namespace axon {
 
+    #define DISPATCH_UNARY(op_name, tensor, out) \
+        if (tensor.device().type == DeviceType::CPU) { \
+            kernels::cpu::op_name##_f32(tensor.numel(), tensor.data_ptr(), out.data_ptr()); \
+        } else { \
+            kernels::gpu::op_name##_f32(tensor.numel(), tensor.data_ptr(), out.data_ptr()); \
+        } 
+        
+    #define DISPATCH_BINARY(op_name, a, b, out) \
+        if (a.device().type == DeviceType::CPU) { \
+            kernels::cpu::op_name##_f32(out.numel(), a.data_ptr(), b.data_ptr(), out.data_ptr()); \
+        } else { \
+            kernels::gpu::op_name##_f32(out.numel(), a.data_ptr(), b.data_ptr(), out.data_ptr()); \
+        }
+
     std::vector<int> broadcast_shapes(const std::vector<int>& s1, const std::vector<int>& s2) {
         size_t len1 = s1.size();
         size_t len2 = s2.size();
