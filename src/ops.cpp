@@ -145,27 +145,32 @@ namespace axon {
     }
 
     struct ReluBackward : public GradFn {
-        Tensor input;
-        ReluBackward(Tensor input_tensor) : input(input_tensor) {}
+        Tensor* input;
+        ReluBackward(Tensor* input_tensor) : input(input_tensor) {}
 
         std::vector<Tensor> apply(const Tensor& grad_output) override {
-            // We need the original input to compute the mask
-            // But 'input' might be strided.
-            Tensor grad_input = Tensor::zeros(input.get_shape());
-            
-            // Force contiguous for kernel execution
-            Tensor inp_c = input.is_contiguous() ? input : input.contiguous();
+            Device dev = input->device();
+            Tensor grad_input = Tensor::zeros(input->get_shape(), dev);
+
+            Tensor inp_c = input->is_contiguous() ? *input : input->contiguous();
             Tensor grad_out_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
-            
-            kernels::cpu::relu_backward_f32(inp_c.numel(), inp_c.data_ptr(), grad_out_c.data_ptr(), grad_input.data_ptr());
-            
+
+            if (dev.type == DeviceType::CPU) {
+                kernels::cpu::relu_backward_f32(inp_c.numel(), inp_c.data_ptr(), grad_out_c.data_ptr(), grad_input.data_ptr());
+            } else {
+                Tensor inp_cpu = inp_c.to(Device(DeviceType::CPU));
+                Tensor grad_cpu = Tensor::zeros(input->get_shape(), Device(DeviceType::CPU));
+                kernels::cpu::relu_backward_f32(inp_cpu.numel(), inp_cpu.data_ptr(), grad_out_c.data_ptr(), grad_cpu.data_ptr());
+                grad_input = grad_cpu.to(dev);
+            }
+
             return {
                 grad_input
             };
         }
     };
     
-    Tensor relu(Tensor t) {
+    Tensor relu(Tensor& t) {
         Device dev = t.device();
         Tensor out = Tensor::zeros(t.get_shape(), dev);
 
@@ -174,22 +179,36 @@ namespace axon {
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<ReluBackward>(t);
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            auto fn = std::make_shared<ReluBackward>(&t);
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
         return out;
     }
 
+    Tensor relu(const Tensor& t_c) {
+        Tensor t = t_c.contiguous();
+        return relu(t);
+    }
+
     struct GeluBackward : public GradFn {
-        Tensor input;
-        GeluBackward(Tensor in) : input(in) {}
+        Tensor* input;
+        GeluBackward(Tensor* in) : input(in) {}
 
         std::vector<Tensor> apply(const Tensor& grad_output) override {
-            Tensor grad_input = Tensor::zeros(input.get_shape());
-            Tensor input_c = input.is_contiguous() ? input : input.contiguous();
+            Device dev = input->device();
+            Tensor grad_input = Tensor::zeros(input->get_shape(), dev);
+            Tensor input_c = input->is_contiguous() ? *input : input->contiguous();
             Tensor g_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
-            kernels::cpu::gelu_backward_f32(input_c.numel(), input_c.data_ptr(), g_c.data_ptr(), grad_input.data_ptr());
+
+            if (dev.type == DeviceType::CPU) {
+                kernels::cpu::gelu_backward_f32(input_c.numel(), input_c.data_ptr(), g_c.data_ptr(), grad_input.data_ptr());
+            } else {
+                Tensor input_cpu = input_c.to(Device(DeviceType::CPU));
+                Tensor grad_cpu = Tensor::zeros(input->get_shape(), Device(DeviceType::CPU));
+                kernels::cpu::gelu_backward_f32(input_cpu.numel(), input_cpu.data_ptr(), g_c.data_ptr(), grad_cpu.data_ptr());
+                grad_input = grad_cpu.to(dev);
+            }
 
             return {
                 grad_input
@@ -197,7 +216,7 @@ namespace axon {
         }
     };
 
-    Tensor gelu(Tensor t) {
+    Tensor gelu(Tensor& t) {
         Device dev = t.device();
         Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
@@ -205,8 +224,8 @@ namespace axon {
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<GeluBackward>(t);
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            auto fn = std::make_shared<GeluBackward>(&t);
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
 
@@ -214,25 +233,32 @@ namespace axon {
     }
 
     struct LogSoftmaxBackward : public GradFn {
-        Tensor output; 
-        LogSoftmaxBackward(Tensor out) : output(out) {}
+        Tensor* output;
+        LogSoftmaxBackward(Tensor* out) : output(out) {}
 
         std::vector<Tensor> apply(const Tensor& grad_output) override {
-            Tensor grad_input = Tensor::zeros(output.get_shape());
-            
-            // Assume 2D (Batch, Class)
-            int rows = output.get_shape()[0];
-            int cols = output.get_shape()[1];
-            
-            Tensor out_c = output.is_contiguous() ? output : output.contiguous();
+            Device dev = output->device();
+            Tensor grad_input = Tensor::zeros(output->get_shape(), dev);
+
+            int rows = output->get_shape()[0];
+            int cols = output->get_shape()[1];
+
+            Tensor out_c = output->is_contiguous() ? *output : output->contiguous();
             Tensor g_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
 
-            kernels::cpu::log_softmax_backward_f32(rows, cols, g_c.data_ptr(), out_c.data_ptr(), grad_input.data_ptr());
+            if (dev.type == DeviceType::CPU) {
+                kernels::cpu::log_softmax_backward_f32(rows, cols, g_c.data_ptr(), out_c.data_ptr(), grad_input.data_ptr());
+            } else {
+                Tensor out_cpu = out_c.to(Device(DeviceType::CPU));
+                Tensor grad_cpu = Tensor::zeros(output->get_shape(), Device(DeviceType::CPU));
+                kernels::cpu::log_softmax_backward_f32(rows, cols, g_c.data_ptr(), out_cpu.data_ptr(), grad_cpu.data_ptr());
+                grad_input = grad_cpu.to(dev);
+            }
             return {grad_input};
         }
     };
 
-    Tensor log_softmax(Tensor t) {
+    Tensor log_softmax(Tensor& t) {
         if (t.get_shape().size() != 2) {
             throw std::invalid_argument("[DIM ERROR]: LogSoftmax expects 2D (Batch, Class)");
         }
@@ -252,8 +278,8 @@ namespace axon {
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<LogSoftmaxBackward>(out);
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            auto fn = std::make_shared<LogSoftmaxBackward>(&out);
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
         return out;
@@ -286,7 +312,7 @@ namespace axon {
         }
     };
 
-    Tensor view(Tensor t, const std::vector<int>& new_shape) {
+Tensor view(Tensor& t, const std::vector<int>& new_shape) {
         // Calculate size to verify compatibility
         size_t new_size = 1;
         for(int s : new_shape) new_size *= s;
@@ -311,11 +337,16 @@ namespace axon {
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
             auto fn = std::make_shared<ViewBackward>(t.get_shape());
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
-     
+      
         return out;
+    }
+
+    Tensor view(const Tensor& t_c, const std::vector<int>& new_shape) {
+        Tensor t = t_c.contiguous();
+        return view(t, new_shape);
     }
 
     struct PermuteBackward : public GradFn {
@@ -333,7 +364,7 @@ namespace axon {
         }
     };
 
-    Tensor permute(Tensor t, const std::vector<int>& dims) {
+    Tensor permute(Tensor& t, const std::vector<int>& dims) {
         if (dims.size() != t.get_shape().size()) {
             throw std::invalid_argument("[PERMUTE] Error: Dims mismatch");
         }
@@ -354,11 +385,16 @@ namespace axon {
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
             auto fn = std::make_shared<PermuteBackward>(dims);
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
 
         return out;
+    }
+
+    Tensor permute(const Tensor& t_c, const std::vector<int>& dims) {
+        Tensor t = t_c.contiguous();
+        return permute(t, dims);
     }
 
     struct AddBackward : public GradFn {
@@ -374,7 +410,7 @@ namespace axon {
         }
     };
 
-    Tensor add(Tensor a, Tensor b) {
+    Tensor add(Tensor& a, Tensor& b) {
         std::vector<int> target_shape = broadcast_shapes(a.get_shape(), b.get_shape());
         Device dev = a.device();
         Tensor a_ex = a.expand(target_shape);
@@ -390,13 +426,19 @@ namespace axon {
         if ((a.requires_grad() || b.requires_grad()) && GradMode::is_enabled()) {
             out.set_requires_grad(true);
             auto fn = std::make_shared<AddBackward>(a.get_shape(), b.get_shape());
-            fn -> next_edges.push_back({a.get_grad_fn(), std::make_shared<Tensor>(a)});
-            fn -> next_edges.push_back({b.get_grad_fn(), std::make_shared<Tensor>(b)});
+            fn -> next_edges.push_back(GradFn::Edge{a.get_grad_fn(), &a});
+            fn -> next_edges.push_back(GradFn::Edge{b.get_grad_fn(), &b});
             out.set_grad_fn(fn);
         }
         return out;
     }
-    
+
+    Tensor add(const Tensor& a_c, const Tensor& b_c) {
+        Tensor a = a_c.contiguous();
+        Tensor b = b_c.contiguous();
+        return add(a, b);
+    }
+
     struct SubBackward : public GradFn {
         // d(a-b)/da = 1, d(a-b)/db = -1
         std::vector<int> a_shape, b_shape;
@@ -413,7 +455,7 @@ namespace axon {
         }
     };
 
-    Tensor sub(Tensor a, Tensor b) {
+Tensor sub(Tensor& a, Tensor& b) {
         std::vector<int> target_shape = broadcast_shapes(a.get_shape(), b.get_shape());
         Device dev = a.device();
         Tensor a_ex = a.expand(target_shape);
@@ -429,27 +471,32 @@ namespace axon {
         if ((a.requires_grad() || b.requires_grad()) && GradMode::is_enabled()) {
             out.set_requires_grad(true);
             auto fn = std::make_shared<SubBackward>(a.get_shape(), b.get_shape());
-            fn -> next_edges.push_back({a.get_grad_fn(), std::make_shared<Tensor>(a)});
-            fn -> next_edges.push_back({b.get_grad_fn(), std::make_shared<Tensor>(b)});
+            fn -> next_edges.push_back(GradFn::Edge{a.get_grad_fn(), &a});
+            fn -> next_edges.push_back(GradFn::Edge{b.get_grad_fn(), &b});
             out.set_grad_fn(fn);
         }
 
         return out;
     }
-    
+
+    Tensor sub(const Tensor& a_c, const Tensor& b_c) {
+        Tensor a = a_c.contiguous();
+        Tensor b = b_c.contiguous();
+        return sub(a, b);
+    }
+
     struct MulBackward : public GradFn {
-        Tensor a, b;
-        MulBackward(Tensor a_in, Tensor b_in) : a(a_in), b(b_in) {}
-        // d(a*b)/da = b, d(a*b)/db = a
+        Tensor *a, *b;
+        MulBackward(Tensor* a_in, Tensor* b_in) : a(a_in), b(b_in) {}
         std::vector<Tensor> apply(const Tensor& grad_output) override {
             return {
-                unbroadcast(axon::mul(grad_output, b), a.get_shape()), 
-                unbroadcast(axon::mul(grad_output, a), b.get_shape())
+                unbroadcast(axon::mul(grad_output, *b), a->get_shape()),
+                unbroadcast(axon::mul(grad_output, *a), b->get_shape())
             };
         }
     };
 
-    Tensor mul(Tensor a, Tensor b) {
+    Tensor mul(Tensor& a, Tensor& b) {
         std::vector<int> target_shape = broadcast_shapes(a.get_shape(), b.get_shape());
         Device dev = a.device();
         Tensor a_ex = a.expand(target_shape);
@@ -464,23 +511,29 @@ namespace axon {
 
         if ((a.requires_grad() || b.requires_grad()) && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<MulBackward>(a, b);
-            fn -> next_edges.push_back({a.get_grad_fn(), std::make_shared<Tensor>(a)});
-            fn -> next_edges.push_back({b.get_grad_fn(), std::make_shared<Tensor>(b)});
+            auto fn = std::make_shared<MulBackward>(&a, &b);
+            fn -> next_edges.push_back(GradFn::Edge{a.get_grad_fn(), &a});
+            fn -> next_edges.push_back(GradFn::Edge{b.get_grad_fn(), &b});
             out.set_grad_fn(fn);
         }
 
-        return out;
+return out;
     }
-    
+
+    Tensor mul(const Tensor& a_c, const Tensor& b_c) {
+        Tensor a = a_c.contiguous();
+        Tensor b = b_c.contiguous();
+        return mul(a, b);
+    }
+
     struct DivBackward : public GradFn {
-        Tensor a, b;
-        DivBackward(Tensor numerator, Tensor denominator) : a(numerator), b(denominator) {}
+        Tensor *a, *b;
+        DivBackward(Tensor* numerator, Tensor* denominator) : a(numerator), b(denominator) {}
 
         std::vector<Tensor> apply(const Tensor& grad_output) override {
-            Tensor grad_a = axon::div(grad_output, b);
-            Tensor b2 = axon::mul(b, b);
-            Tensor neg_grad_a_b2 = axon::neg(axon::div(axon::mul(grad_output, a), b2));
+            Tensor grad_a = axon::div(grad_output, *b);
+            Tensor b2 = axon::mul(*b, *b);
+            Tensor neg_grad_a_b2 = axon::neg(axon::div(axon::mul(grad_output, *a), b2));
 
             return {
                 grad_a, neg_grad_a_b2
@@ -488,7 +541,7 @@ namespace axon {
         }
     };
 
-    Tensor div(Tensor a, Tensor b) {
+    Tensor div(Tensor& a, Tensor& b) {
         std::vector<int> target_shape = broadcast_shapes(a.get_shape(), b.get_shape());
         Device dev = a.device();
         Tensor a_ex = a.expand(target_shape);
@@ -503,13 +556,19 @@ namespace axon {
 
         if ((a.requires_grad() || b.requires_grad()) && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<DivBackward>(a, b);
-            fn -> next_edges.push_back({a.get_grad_fn(), std::make_shared<Tensor>(a)});
-            fn -> next_edges.push_back({b.get_grad_fn(), std::make_shared<Tensor>(b)});
+            auto fn = std::make_shared<DivBackward>(&a, &b);
+            fn -> next_edges.push_back(GradFn::Edge{a.get_grad_fn(), &a});
+            fn -> next_edges.push_back(GradFn::Edge{b.get_grad_fn(), &b});
             out.set_grad_fn(fn);
         }
 
         return out;
+    }
+
+    Tensor div(const Tensor& a_c, const Tensor& b_c) {
+        Tensor a = a_c.contiguous();
+        Tensor b = b_c.contiguous();
+        return div(a, b);
     }
 
     struct NegBackward : public GradFn {
@@ -520,7 +579,7 @@ namespace axon {
         }
     };
 
-    Tensor neg(Tensor t) {
+    Tensor neg(Tensor& t) {
         Device dev = t.device();
         Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
@@ -529,20 +588,25 @@ namespace axon {
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
             auto fn = std::make_shared<NegBackward>();
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
         return out;
     }
 
+    Tensor neg(const Tensor& t_c) {
+        Tensor t = t_c.contiguous();
+        return neg(t);
+    }
+
     struct SqrtBackward : public GradFn {
-        Tensor output;
-        SqrtBackward(Tensor out) : output(out) {}
+        Tensor* output;
+        SqrtBackward(Tensor* out) : output(out) {}
 
         std::vector<Tensor> apply(const Tensor& grad_output) override {
             Tensor two = Tensor::ones({1});
             two.at({0}) = 2.0f;
-            Tensor denominator = axon::mul(output, two);
+            Tensor denominator = axon::mul(*output, two);
 
             return {
                 axon::div(grad_output, denominator)
@@ -551,7 +615,7 @@ namespace axon {
     };
 
 
-    Tensor sqrt(Tensor t) {
+    Tensor sqrt(Tensor& t) {
         Device dev = t.device();
         Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
@@ -559,26 +623,31 @@ namespace axon {
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<SqrtBackward>(out); // Save output for backward
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            auto fn = std::make_shared<SqrtBackward>(&out); // Save output for backward
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
 
         return out;
     }
 
+    Tensor sqrt(const Tensor& t_c) {
+        Tensor t = t_c.contiguous();
+        return sqrt(t);
+    }
+
     struct ExpBackward : public GradFn {
-        Tensor output;
-        ExpBackward(Tensor out) : output(out) {}
-        
+        Tensor* output;
+        ExpBackward(Tensor* out) : output(out) {}
+
         std::vector<Tensor> apply(const Tensor& grad_output) override {
             return {
-                axon::mul(grad_output, output)
+                axon::mul(grad_output, *output)
             };
         }
     };
 
-    Tensor exp(Tensor t) {
+    Tensor exp(Tensor& t) {
         Device dev = t.device();
         Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
@@ -586,12 +655,17 @@ namespace axon {
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<ExpBackward>(out); // Save output for backward
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            auto fn = std::make_shared<ExpBackward>(&out); // Save output for backward
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
 
         return out;
+    }
+
+    Tensor exp(const Tensor& t_c) {
+        Tensor t = t_c.contiguous();
+        return exp(t);
     }
 
 
@@ -605,7 +679,7 @@ namespace axon {
         }
     };
 
-    Tensor transpose(Tensor t, int dim0, int dim1) {
+    Tensor transpose(Tensor& t, int dim0, int dim1) {
         std::vector<int> new_shape = t.get_shape();
         std::vector<int> new_stride = t.get_stride();
         std::swap(new_shape[dim0], new_shape[dim1]);
@@ -616,11 +690,16 @@ namespace axon {
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
             auto fn = std::make_shared<TransposeBackward>(dim0, dim1);
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
 
         return out;
+    }
+
+    Tensor transpose(const Tensor& t_c, int dim0, int dim1) {
+        Tensor t = t_c.contiguous();
+        return transpose(t, dim0, dim1);
     }
 
     size_t get_flat_offset(const std::vector<int>& strides, const std::vector<int>& indices) {
@@ -633,30 +712,29 @@ namespace axon {
     }
 
     struct MatMulBackward : public GradFn {
-        Tensor a, b;
-        MatMulBackward(Tensor a_in, Tensor b_in) : a(a_in), b(b_in) {}
+        Tensor *a, *b;
+        MatMulBackward(Tensor* a_in, Tensor* b_in) : a(a_in), b(b_in) {}
 
         std::vector<Tensor> apply(const Tensor& grad_output) override {
-            int a_rank = a.get_shape().size();
-            int b_rank = b.get_shape().size();
+            int a_rank = a->get_shape().size();
+            int b_rank = b->get_shape().size();
 
-            // transpose the last two dimensions
-            Tensor a_t = axon::transpose(a, a_rank - 2, a_rank - 1);
-            Tensor b_t = axon::transpose(b, b_rank - 2, b_rank - 1);
-        
+            Tensor a_t = axon::transpose(*a, a_rank - 2, a_rank - 1);
+            Tensor b_t = axon::transpose(*b, b_rank - 2, b_rank - 1);
+
             Tensor grad_a = axon::matmul(grad_output, b_t);
             Tensor grad_b = axon::matmul(a_t, grad_output);
 
             return {
-                unbroadcast(grad_a, a.get_shape()),
-                unbroadcast(grad_b, b.get_shape())
+                unbroadcast(grad_a, a->get_shape()),
+                unbroadcast(grad_b, b->get_shape())
             };
         }
     };
 
-    Tensor matmul_impl(Tensor a, Tensor b);
+    Tensor matmul_impl(Tensor& a, Tensor& b);
 
-    Tensor matmul(Tensor a, Tensor b) {
+    Tensor matmul(Tensor& a, Tensor& b) {
         int a_rank = a.get_shape().size();
         int b_rank = b.get_shape().size();
     
@@ -683,7 +761,13 @@ namespace axon {
         return matmul_impl(a, b);
     }
 
-    Tensor matmul_impl(Tensor a, Tensor b) {
+    Tensor matmul(const Tensor& a_c, const Tensor& b_c) {
+        Tensor a = a_c.contiguous();
+        Tensor b = b_c.contiguous();
+        return matmul(a, b);
+    }
+
+    Tensor matmul_impl(Tensor& a, Tensor& b) {
         int a_rank = a.get_shape().size();
         int b_rank = b.get_shape().size();
    
@@ -818,9 +902,9 @@ namespace axon {
 
         if ((a.requires_grad() || b.requires_grad()) && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<MatMulBackward>(a, b);
-            fn -> next_edges.push_back({a.get_grad_fn(), std::make_shared<Tensor>(a)});
-            fn -> next_edges.push_back({b.get_grad_fn(), std::make_shared<Tensor>(b)});
+            auto fn = std::make_shared<MatMulBackward>(&a, &b);
+            fn -> next_edges.push_back(GradFn::Edge{a.get_grad_fn(), &a});
+            fn -> next_edges.push_back(GradFn::Edge{b.get_grad_fn(), &b});
 
             out.set_grad_fn(fn);
         }
@@ -838,7 +922,7 @@ namespace axon {
         }
     };
 
-    Tensor sum(Tensor a) {
+    Tensor sum(Tensor& a) {
         Device dev = a.device();
         Tensor out = Tensor::zeros({1}, dev);
 
@@ -859,14 +943,14 @@ namespace axon {
         if (a.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
             auto fn = std::make_shared<SumBackward>(a.get_shape());
-            fn -> next_edges.push_back({a.get_grad_fn(), std::make_shared<Tensor>(a)});
+            fn -> next_edges.push_back(GradFn::Edge{a.get_grad_fn(), &a});
             out.set_grad_fn(fn);
         }
         
         return out;
     }
 
-    Tensor sum(Tensor t, int dim, bool keepdim) {
+    Tensor sum(Tensor& t, int dim, bool keepdim) {
         std::vector<int> shape = t.get_shape();
         // Handle negative dims (-1)
         if (dim < 0) {
@@ -924,28 +1008,37 @@ namespace axon {
     // * CUSTOM LAYERS
 
     struct EmbeddingBackward : public GradFn {
-        Tensor weight, indices;
-        EmbeddingBackward(Tensor w, Tensor idx) : weight(w), indices(idx) {}
-    
+        Tensor *weight, *indices;
+        EmbeddingBackward(Tensor* w, Tensor* idx) : weight(w), indices(idx) {}
+
         std::vector<Tensor> apply(const Tensor& grad_output) override {
-            Tensor grad_weight = Tensor::zeros(weight.get_shape());
+            Device dev = weight->device();
+            Tensor grad_weight = Tensor::zeros(weight->get_shape(), dev);
             Tensor grad_out_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
-            Tensor idx_c = indices.is_contiguous() ? indices : indices.contiguous();
+            Tensor idx_c = indices->is_contiguous() ? *indices : indices->contiguous();
 
-            size_t vocab = weight.get_shape()[0];
-            size_t dim = weight.get_shape()[1];
-            size_t num_idx = indices.numel();
+            size_t vocab = weight->get_shape()[0];
+            size_t dim = weight->get_shape()[1];
+            size_t num_idx = indices->numel();
 
-            kernels::cpu::embedding_backward_f32(vocab, dim, num_idx, grad_out_c.data_ptr(), idx_c.data_ptr(), grad_weight.data_ptr());
+            if (dev.type == DeviceType::CPU) {
+                kernels::cpu::embedding_backward_f32(vocab, dim, num_idx, grad_out_c.data_ptr(), idx_c.data_ptr(), grad_weight.data_ptr());
+            } else {
+                Tensor grad_out_cpu = grad_out_c.to(Device(DeviceType::CPU));
+                Tensor idx_cpu = idx_c.to(Device(DeviceType::CPU));
+                Tensor grad_w_cpu = Tensor::zeros(weight->get_shape(), Device(DeviceType::CPU));
+                kernels::cpu::embedding_backward_f32(vocab, dim, num_idx, grad_out_cpu.data_ptr(), idx_cpu.data_ptr(), grad_w_cpu.data_ptr());
+                grad_weight = grad_w_cpu.to(dev);
+            }
 
             return {
-                Tensor::zeros(indices.get_shape()),
+                Tensor::zeros(indices->get_shape(), dev),
                 grad_weight
             };
         }
     };
 
-    Tensor embedding(Tensor input, Tensor weight) {
+    Tensor embedding(Tensor& input, Tensor& weight) {
         if (weight.get_shape().size() != 2) {
             throw std::invalid_argument("[EMBEDDING]: Weight must be 2D");
         }
@@ -979,9 +1072,9 @@ namespace axon {
         if (weight.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
 
-            auto fn = std::make_shared<EmbeddingBackward>(weight, input);
-            fn -> next_edges.push_back({input.get_grad_fn(), std::make_shared<Tensor>(input)});
-            fn -> next_edges.push_back({weight.get_grad_fn(), std::make_shared<Tensor>(weight)});
+            auto fn = std::make_shared<EmbeddingBackward>(&weight, &input);
+            fn -> next_edges.push_back(GradFn::Edge{input.get_grad_fn(), &input});
+            fn -> next_edges.push_back(GradFn::Edge{weight.get_grad_fn(), &weight});
             out.set_grad_fn(fn);
         }
 
@@ -989,35 +1082,49 @@ namespace axon {
     }
 
     struct LayerNormBackward : public GradFn {
-        Tensor input, gamma;
+        Tensor *input, *gamma;
         float eps;
 
-        LayerNormBackward(Tensor in, Tensor g, float e) : input(in), gamma(g), eps(e) {}
+        LayerNormBackward(Tensor* in, Tensor* g, float e) : input(in), gamma(g), eps(e) {}
 
         std::vector<Tensor> apply(const Tensor& grad_output) override {
-            Tensor grad_input = Tensor::zeros(input.get_shape());
-            Tensor grad_gamma = Tensor::zeros(gamma.get_shape());
-            Tensor grad_beta = Tensor::zeros(gamma.get_shape());
+            Device dev = input->device();
+            Tensor grad_input = Tensor::zeros(input->get_shape(), dev);
+            Tensor grad_gamma = Tensor::zeros(gamma->get_shape(), dev);
+            Tensor grad_beta = Tensor::zeros(gamma->get_shape(), dev);
 
-            size_t cols = input.get_shape().back();
-            size_t rows = input.numel() / cols;
+            size_t cols = input->get_shape().back();
+            size_t rows = input->numel() / cols;
 
-            Tensor in_c = input.is_contiguous() ? input : input.contiguous();
-            Tensor gam_c = gamma.is_contiguous() ? gamma : gamma.contiguous();
+            Tensor in_c = input->is_contiguous() ? *input : input->contiguous();
+            Tensor gam_c = gamma->is_contiguous() ? *gamma : gamma->contiguous();
             Tensor g_out_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
 
-            kernels::cpu::layernorm_backward_f32(rows, cols, 
-                g_out_c.data_ptr(), in_c.data_ptr(), gam_c.data_ptr(), eps,
-                grad_input.data_ptr(), grad_gamma.data_ptr(), grad_beta.data_ptr());
-            
-            // Output order must match inputs of forward: {input, gamma, beta}
+            if (dev.type == DeviceType::CPU) {
+                kernels::cpu::layernorm_backward_f32(rows, cols,
+                    g_out_c.data_ptr(), in_c.data_ptr(), gam_c.data_ptr(), eps,
+                    grad_input.data_ptr(), grad_gamma.data_ptr(), grad_beta.data_ptr());
+            } else {
+                Tensor in_cpu = in_c.to(Device(DeviceType::CPU));
+                Tensor gam_cpu = gam_c.to(Device(DeviceType::CPU));
+                Tensor grad_i_cpu = Tensor::zeros(input->get_shape(), Device(DeviceType::CPU));
+                Tensor grad_g_cpu = Tensor::zeros(gamma->get_shape(), Device(DeviceType::CPU));
+                Tensor grad_b_cpu = Tensor::zeros(gamma->get_shape(), Device(DeviceType::CPU));
+                kernels::cpu::layernorm_backward_f32(rows, cols,
+                    g_out_c.data_ptr(), in_cpu.data_ptr(), gam_cpu.data_ptr(), eps,
+                    grad_i_cpu.data_ptr(), grad_g_cpu.data_ptr(), grad_b_cpu.data_ptr());
+                grad_input = grad_i_cpu.to(dev);
+                grad_gamma = grad_g_cpu.to(dev);
+                grad_beta = grad_b_cpu.to(dev);
+            }
+
             return {
                 grad_input, grad_gamma, grad_beta
             };
         }
     };
 
-    Tensor layer_norm(Tensor input, Tensor gamma, Tensor beta, float eps) {
+    Tensor layer_norm(Tensor& input, Tensor& gamma, Tensor& beta, float eps) {
 
         int dim = input.get_shape().back();
         if (gamma.numel() != dim || beta.numel() != dim) {
@@ -1047,10 +1154,10 @@ namespace axon {
 
         if ((input.requires_grad() || gamma.requires_grad() || beta.requires_grad()) && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<LayerNormBackward>(input, gamma, eps);
-            fn -> next_edges.push_back({input.get_grad_fn(), std::make_shared<Tensor>(input)});
-            fn -> next_edges.push_back({gamma.get_grad_fn(), std::make_shared<Tensor>(gamma)});
-            fn -> next_edges.push_back({beta.get_grad_fn(), std::make_shared<Tensor>(beta)});
+            auto fn = std::make_shared<LayerNormBackward>(&input, &gamma, eps);
+            fn -> next_edges.push_back(GradFn::Edge{input.get_grad_fn(), &input});
+            fn -> next_edges.push_back(GradFn::Edge{gamma.get_grad_fn(), &gamma});
+            fn -> next_edges.push_back(GradFn::Edge{beta.get_grad_fn(), &beta});
             out.set_grad_fn(fn);
         }
 
@@ -1058,25 +1165,33 @@ namespace axon {
     }
 
     struct SoftmaxBackward : public GradFn {
-        Tensor output;
-        SoftmaxBackward(Tensor out) : output(out) {}
-    
+        Tensor* output;
+        SoftmaxBackward(Tensor* out) : output(out) {}
+
         std::vector<Tensor> apply(const Tensor& grad_output) override {
-            Tensor grad_input = Tensor::zeros(output.get_shape());
-            
-            size_t cols = output.get_shape().back();
-            size_t rows = output.numel() / cols;
-            
-            Tensor out_c = output.is_contiguous() ? output : output.contiguous();
+            Device dev = output->device();
+            Tensor grad_input = Tensor::zeros(output->get_shape(), dev);
+
+            size_t cols = output->get_shape().back();
+            size_t rows = output->numel() / cols;
+
+            Tensor out_c = output->is_contiguous() ? *output : output->contiguous();
             Tensor gout_c = grad_output.is_contiguous() ? grad_output : grad_output.contiguous();
 
-            kernels::cpu::softmax_backward_f32(rows, cols, gout_c.data_ptr(), out_c.data_ptr(), grad_input.data_ptr());
-            
+            if (dev.type == DeviceType::CPU) {
+                kernels::cpu::softmax_backward_f32(rows, cols, gout_c.data_ptr(), out_c.data_ptr(), grad_input.data_ptr());
+            } else {
+                Tensor out_cpu = out_c.to(Device(DeviceType::CPU));
+                Tensor grad_cpu = Tensor::zeros(output->get_shape(), Device(DeviceType::CPU));
+                kernels::cpu::softmax_backward_f32(rows, cols, gout_c.data_ptr(), out_cpu.data_ptr(), grad_cpu.data_ptr());
+                grad_input = grad_cpu.to(dev);
+            }
+
             return { grad_input };
         }
     };
 
-    Tensor softmax(Tensor t) {
+    Tensor softmax(Tensor& t) {
         Device dev = t.device();
         Tensor out = Tensor::zeros(t.get_shape(), dev);
         size_t cols = t.get_shape().back();
@@ -1094,8 +1209,8 @@ namespace axon {
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
-            auto fn = std::make_shared<SoftmaxBackward>(out);
-            fn -> next_edges.push_back({t.get_grad_fn(), std::make_shared<Tensor>(t)});
+            auto fn = std::make_shared<SoftmaxBackward>(&out);
+            fn -> next_edges.push_back(GradFn::Edge{t.get_grad_fn(), &t});
             out.set_grad_fn(fn);
         }
         return out;
