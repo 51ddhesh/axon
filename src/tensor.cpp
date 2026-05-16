@@ -308,13 +308,14 @@ namespace axon {
         visited.insert(fn);
         fn_to_tensor_map[fn] = t;
 
+        topo.push_back(fn);
+
         for (auto& edge : fn->next_edges) {
-            if (edge.input_tensor) {
-                build_topo(edge.input_tensor.get(), topo, visited, fn_to_tensor_map);
+            Tensor* inp_ptr = edge.input_tensor;
+            if (inp_ptr && inp_ptr->numel() > 0) {
+                build_topo(inp_ptr, topo, visited, fn_to_tensor_map);
             }
         }
-
-        topo.push_back(fn);
     }
 
     void Tensor::backward() {
@@ -333,8 +334,6 @@ namespace axon {
 
         build_topo(this, topo_order, visited, fn_to_tensor_map);
 
-        std::reverse(topo_order.begin(), topo_order.end());
-
         for (GradFn* fn : topo_order) {
             Tensor* output_tensor = fn_to_tensor_map[fn];
             auto output_grad = output_tensor->get_grad();
@@ -343,14 +342,19 @@ namespace axon {
 
             auto input_grads = fn->apply(*output_grad);
 
-            if (input_grads.size() != fn->next_edges.size()) {
-                std::cerr << "[FATAL] Autograd Graph Mismatch.\n";
+            int edge_count = 0;
+            for (auto& edge : fn->next_edges) {
+                if (edge.input_tensor && edge.input_tensor->numel() > 0) edge_count++;
+            }
+
+            if (input_grads.size() != (size_t)edge_count && input_grads.size() != fn->next_edges.size()) {
+                std::cerr << "[FATAL] Autograd Graph Mismatch: " << input_grads.size() << " vs " << fn->next_edges.size() << "\n";
                 std::terminate();
             }
 
             for (size_t i = 0; i < fn->next_edges.size(); i++) {
                 auto& edge = fn->next_edges[i];
-                if (edge.input_tensor && edge.input_tensor->requires_grad()) {
+                if (edge.input_tensor && edge.input_tensor->numel() > 0 && edge.input_tensor->requires_grad()) {
                     edge.input_tensor->add_grad(input_grads[i]);
                 }
             }

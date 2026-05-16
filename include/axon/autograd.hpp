@@ -10,7 +10,7 @@ namespace axon {
     struct GradFn {
         struct Edge {
             std::shared_ptr<GradFn> fn;
-            std::shared_ptr<Tensor> input_tensor;
+            Tensor* input_tensor;
         };
 
         std::vector<Edge> next_edges;
@@ -19,5 +19,5 @@ namespace axon {
         virtual std::vector<Tensor> apply(const Tensor& grad_output) = 0;
     };
 
-    
+
 } // namespace axon
