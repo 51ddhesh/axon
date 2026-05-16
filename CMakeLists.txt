@@ -22,6 +22,8 @@ add_library(axon
     src/ops.cpp
     src/autograd.cpp
     src/serialization.cpp
+    src/cuda_kernels.cu
+    src/gpu_kernels.cu
 )
 
 target_link_libraries(axon PRIVATE CUDA::cublas CUDA::cudart)
