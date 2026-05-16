@@ -30,6 +30,12 @@ namespace axon {
     public:
         Tensor(std::vector<int> shape, Device dev = Device(DeviceType::CPU));
 
+        Tensor(const Tensor& other);
+        Tensor(Tensor&& other) noexcept;
+        Tensor& operator=(const Tensor& other);
+        Tensor& operator=(Tensor&& other) noexcept;
+        ~Tensor() = default;
+
         static Tensor zeros(std::vector<int> shape, Device dev = Device(DeviceType::CPU));
         static Tensor ones(std::vector<int> shape, Device dev = Device(DeviceType::CPU));
 

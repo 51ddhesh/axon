@@ -13,11 +13,56 @@
 
 namespace axon {
 
-    Tensor::Tensor(std::vector<int> shape, Device dev) 
+    Tensor::Tensor(std::vector<int> shape, Device dev)
         : shape(shape), offset(0) {
         calculate_strides();
         storage = std::make_shared<Storage>(size * sizeof(float), dev);
         state = std::make_shared<TensorState>();
+    }
+
+    Tensor::Tensor(const Tensor& other)
+        : storage(other.storage),
+          state(other.state),
+          shape(other.shape),
+          stride(other.stride),
+          offset(other.offset),
+          size(other.size) {}
+
+    Tensor::Tensor(Tensor&& other) noexcept
+        : storage(std::move(other.storage)),
+          state(std::move(other.state)),
+          shape(std::move(other.shape)),
+          stride(std::move(other.stride)),
+          offset(other.offset),
+          size(other.size) {
+        other.offset = 0;
+        other.size = 0;
+    }
+
+    Tensor& Tensor::operator=(const Tensor& other) {
+        if (this != &other) {
+            storage = other.storage;
+            state = other.state;
+            shape = other.shape;
+            stride = other.stride;
+            offset = other.offset;
+            size = other.size;
+        }
+        return *this;
+    }
+
+    Tensor& Tensor::operator=(Tensor&& other) noexcept {
+        if (this != &other) {
+            storage = std::move(other.storage);
+            state = std::move(other.state);
+            shape = std::move(other.shape);
+            stride = std::move(other.stride);
+            offset = other.offset;
+            size = other.size;
+            other.offset = 0;
+            other.size = 0;
+        }
+        return *this;
     }
 
     Tensor Tensor::from_storage(
