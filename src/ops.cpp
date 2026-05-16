@@ -13,13 +13,34 @@ namespace axon {
             kernels::cpu::op_name##_f32(tensor.numel(), tensor.data_ptr(), out.data_ptr()); \
         } else { \
             kernels::gpu::op_name##_f32(tensor.numel(), tensor.data_ptr(), out.data_ptr()); \
-        } 
-        
+        }
+
+    #define DISPATCH_UNARY_FALLBACK(op_name, tensor, out) \
+        if (tensor.device().type == DeviceType::CPU) { \
+            kernels::cpu::op_name##_f32(tensor.numel(), tensor.data_ptr(), out.data_ptr()); \
+        } else { \
+            Tensor t_cpu = tensor.to(Device(DeviceType::CPU)); \
+            Tensor out_cpu = Tensor::zeros(tensor.get_shape(), Device(DeviceType::CPU)); \
+            kernels::cpu::op_name##_f32(t_cpu.numel(), t_cpu.data_ptr(), out_cpu.data_ptr()); \
+            out = out_cpu.to(tensor.device()); \
+        }
+
     #define DISPATCH_BINARY(op_name, a, b, out) \
         if (a.device().type == DeviceType::CPU) { \
             kernels::cpu::op_name##_f32(out.numel(), a.data_ptr(), b.data_ptr(), out.data_ptr()); \
         } else { \
             kernels::gpu::op_name##_f32(out.numel(), a.data_ptr(), b.data_ptr(), out.data_ptr()); \
+        }
+
+    #define DISPATCH_BINARY_FALLBACK(op_name, a, b, out) \
+        if (a.device().type == DeviceType::CPU) { \
+            kernels::cpu::op_name##_f32(out.numel(), a.data_ptr(), b.data_ptr(), out.data_ptr()); \
+        } else { \
+            Tensor a_cpu = a.to(Device(DeviceType::CPU)); \
+            Tensor b_cpu = b.to(Device(DeviceType::CPU)); \
+            Tensor out_cpu = Tensor::zeros(out.get_shape(), Device(DeviceType::CPU)); \
+            kernels::cpu::op_name##_f32(out.numel(), a_cpu.data_ptr(), b_cpu.data_ptr(), out_cpu.data_ptr()); \
+            out = out_cpu.to(a.device()); \
         }
 
     std::vector<int> broadcast_shapes(const std::vector<int>& s1, const std::vector<int>& s2) {
@@ -145,10 +166,11 @@ namespace axon {
     };
     
     Tensor relu(Tensor t) {
-        Tensor out = Tensor::zeros(t.get_shape());
-        
+        Device dev = t.device();
+        Tensor out = Tensor::zeros(t.get_shape(), dev);
+
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::cpu::relu_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        DISPATCH_UNARY_FALLBACK(relu, t_c, out);
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -176,9 +198,10 @@ namespace axon {
     };
 
     Tensor gelu(Tensor t) {
-        Tensor out = Tensor::zeros(t.get_shape());
+        Device dev = t.device();
+        Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::cpu::gelu_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        DISPATCH_UNARY_FALLBACK(gelu, t_c, out);
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -213,11 +236,19 @@ namespace axon {
         if (t.get_shape().size() != 2) {
             throw std::invalid_argument("[DIM ERROR]: LogSoftmax expects 2D (Batch, Class)");
         }
-        
-        Tensor out = Tensor::zeros(t.get_shape());
+
+        Device dev = t.device();
+        Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        
-        kernels::cpu::log_softmax_f32(t.get_shape()[0], t.get_shape()[1], t_c.data_ptr(), out.data_ptr());
+
+        if (dev.type == DeviceType::CPU) {
+            kernels::cpu::log_softmax_f32(t.get_shape()[0], t.get_shape()[1], t_c.data_ptr(), out.data_ptr());
+        } else {
+            Tensor t_cpu = t_c.to(Device(DeviceType::CPU));
+            Tensor out_cpu = Tensor::zeros(t.get_shape(), Device(DeviceType::CPU));
+            kernels::cpu::log_softmax_f32(t.get_shape()[0], t.get_shape()[1], t_cpu.data_ptr(), out_cpu.data_ptr());
+            out = out_cpu.to(dev);
+        }
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -345,12 +376,13 @@ namespace axon {
 
     Tensor add(Tensor a, Tensor b) {
         std::vector<int> target_shape = broadcast_shapes(a.get_shape(), b.get_shape());
+        Device dev = a.device();
         Tensor a_ex = a.expand(target_shape);
         Tensor b_ex = b.expand(target_shape);
-        Tensor out = Tensor::zeros(target_shape);
+        Tensor out = Tensor::zeros(target_shape, dev);
 
         if (a_ex.is_contiguous() && b_ex.is_contiguous() && out.is_contiguous()) {
-            kernels::cpu::add_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
+            DISPATCH_BINARY_FALLBACK(add, a_ex, b_ex, out);
         } else {
             dispatch_binary_op(a_ex, b_ex, out, [](float x, float y) { return x + y; });
         }
@@ -383,12 +415,13 @@ namespace axon {
 
     Tensor sub(Tensor a, Tensor b) {
         std::vector<int> target_shape = broadcast_shapes(a.get_shape(), b.get_shape());
+        Device dev = a.device();
         Tensor a_ex = a.expand(target_shape);
         Tensor b_ex = b.expand(target_shape);
-        Tensor out = Tensor::zeros(target_shape);
+        Tensor out = Tensor::zeros(target_shape, dev);
 
         if (a_ex.is_contiguous() && b_ex.is_contiguous() && out.is_contiguous()) {
-            kernels::cpu::sub_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
+            DISPATCH_BINARY_FALLBACK(sub, a_ex, b_ex, out);
         } else {
             dispatch_binary_op(a_ex, b_ex, out, [](float x, float y) { return x - y; });
         }
@@ -418,12 +451,13 @@ namespace axon {
 
     Tensor mul(Tensor a, Tensor b) {
         std::vector<int> target_shape = broadcast_shapes(a.get_shape(), b.get_shape());
+        Device dev = a.device();
         Tensor a_ex = a.expand(target_shape);
         Tensor b_ex = b.expand(target_shape);
-        Tensor out = Tensor::zeros(target_shape);
+        Tensor out = Tensor::zeros(target_shape, dev);
 
         if (a_ex.is_contiguous() && b_ex.is_contiguous() && out.is_contiguous()) {
-            kernels::cpu::mul_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
+            DISPATCH_BINARY_FALLBACK(mul, a_ex, b_ex, out);
         } else {
             dispatch_binary_op(a_ex, b_ex, out, [](float x, float y) { return x * y; });
         }
@@ -456,12 +490,13 @@ namespace axon {
 
     Tensor div(Tensor a, Tensor b) {
         std::vector<int> target_shape = broadcast_shapes(a.get_shape(), b.get_shape());
+        Device dev = a.device();
         Tensor a_ex = a.expand(target_shape);
         Tensor b_ex = b.expand(target_shape);
-        Tensor out = Tensor::zeros(target_shape);
+        Tensor out = Tensor::zeros(target_shape, dev);
 
         if (a_ex.is_contiguous() && b_ex.is_contiguous() && out.is_contiguous()) {
-            kernels::cpu::div_f32(out.numel(), a_ex.data_ptr(), b_ex.data_ptr(), out.data_ptr());
+            DISPATCH_BINARY_FALLBACK(div, a_ex, b_ex, out);
         } else {
             dispatch_binary_op(a_ex, b_ex, out, [](float x, float y) { return x / y; });
         }
@@ -486,10 +521,11 @@ namespace axon {
     };
 
     Tensor neg(Tensor t) {
-        Tensor out = Tensor::zeros(t.get_shape());
+        Device dev = t.device();
+        Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::cpu::neg_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
-        
+        DISPATCH_UNARY_FALLBACK(neg, t_c, out);
+
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
             auto fn = std::make_shared<NegBackward>();
@@ -516,9 +552,10 @@ namespace axon {
 
 
     Tensor sqrt(Tensor t) {
-        Tensor out = Tensor::zeros(t.get_shape());
+        Device dev = t.device();
+        Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::cpu::sqrt_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        DISPATCH_UNARY_FALLBACK(sqrt, t_c, out);
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -542,9 +579,10 @@ namespace axon {
     };
 
     Tensor exp(Tensor t) {
-        Tensor out = Tensor::zeros(t.get_shape());
+        Device dev = t.device();
+        Tensor out = Tensor::zeros(t.get_shape(), dev);
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::cpu::exp_f32(t_c.numel(), t_c.data_ptr(), out.data_ptr());
+        DISPATCH_UNARY_FALLBACK(exp, t_c, out);
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -676,7 +714,8 @@ namespace axon {
         out_shape.push_back(M);
         out_shape.push_back(N);
 
-        Tensor out = Tensor::zeros(out_shape);
+        Device dev = a.device();
+        Tensor out = Tensor::zeros(out_shape, dev);
 
         std::vector<int> shape_a_exp = batch_out;
         shape_a_exp.push_back(M);
@@ -758,7 +797,15 @@ namespace axon {
                 pB = b_buf.data();
             }
 
-            kernels::cpu::matmul_f32(M, N, K, pA, pB, out_ptr_base + off_o);
+            if (dev.type == DeviceType::CPU) {
+                kernels::cpu::matmul_f32(M, N, K, pA, pB, out_ptr_base + off_o);
+            } else {
+                Tensor a_cpu = a_ex.to(Device(DeviceType::CPU));
+                Tensor b_cpu = b_ex.to(Device(DeviceType::CPU));
+                Tensor out_cpu = Tensor::zeros({M, N}, Device(DeviceType::CPU));
+                kernels::cpu::matmul_f32(M, N, K, a_cpu.data_ptr() + off_a, b_cpu.data_ptr() + off_b, out_cpu.data_ptr());
+                cudaMemcpy(out_ptr_base + off_o, out_cpu.data_ptr(), M * N * sizeof(float), axon::MemcpyHostToDevice);
+            }
             
             for (int i = static_cast<int>(batch_out.size()) - 1; i >= 0; i--) {
                 current_indices[i]++;
@@ -792,11 +839,18 @@ namespace axon {
     };
 
     Tensor sum(Tensor a) {
-        Tensor out = Tensor::zeros({1});
-        
+        Device dev = a.device();
+        Tensor out = Tensor::zeros({1}, dev);
+
         if (a.is_contiguous()) {
-            // Fast Path: AVX Vectorized Sum
-            kernels::cpu::sum_f32(a.numel(), a.data_ptr(), out.data_ptr());
+            if (dev.type == DeviceType::CPU) {
+                kernels::cpu::sum_f32(a.numel(), a.data_ptr(), out.data_ptr());
+            } else {
+                Tensor a_cpu = a.to(Device(DeviceType::CPU));
+                Tensor out_cpu = Tensor::zeros({1}, Device(DeviceType::CPU));
+                kernels::cpu::sum_f32(a_cpu.numel(), a_cpu.data_ptr(), out_cpu.data_ptr());
+                cudaMemcpy(out.data_ptr(), out_cpu.data_ptr(), sizeof(float), axon::MemcpyHostToDevice);
+            }
         } else {
             float val = sum_recursive(0, a, 0);
             out.data_ptr()[0] = val;
@@ -851,10 +905,18 @@ namespace axon {
             out_shape.push_back(1);
         }
 
-        Tensor out = Tensor::zeros(out_shape);
+        Device dev = t.device();
+        Tensor out = Tensor::zeros(out_shape, dev);
 
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::cpu::sum_dim_f32(outer, target_dim_size, inner, t_c.data_ptr(), out.data_ptr());
+        if (dev.type == DeviceType::CPU) {
+            kernels::cpu::sum_dim_f32(outer, target_dim_size, inner, t_c.data_ptr(), out.data_ptr());
+        } else {
+            Tensor t_cpu = t_c.to(Device(DeviceType::CPU));
+            Tensor out_cpu = Tensor::zeros(out_shape, Device(DeviceType::CPU));
+            kernels::cpu::sum_dim_f32(outer, target_dim_size, inner, t_cpu.data_ptr(), out_cpu.data_ptr());
+            out = out_cpu.to(dev);
+        }
 
         return out;
     }
@@ -889,17 +951,30 @@ namespace axon {
         }
 
         std::vector<int> out_shape = input.get_shape();
+        Device dev = weight.device();
 
         out_shape.push_back(weight.get_shape()[1]);
-        Tensor out = Tensor::zeros(out_shape);
+        Tensor out = Tensor::zeros(out_shape, dev);
 
         Tensor input_c = input.is_contiguous() ? input : input.contiguous();
 
-        kernels::cpu::embedding_forward_f32(
-            weight.get_shape()[0], weight.get_shape()[1],
-            input.numel(), weight.data_ptr(),
-            input_c.data_ptr(), out.data_ptr()
-        );
+        if (dev.type == DeviceType::CPU) {
+            kernels::cpu::embedding_forward_f32(
+                weight.get_shape()[0], weight.get_shape()[1],
+                input.numel(), weight.data_ptr(),
+                input_c.data_ptr(), out.data_ptr()
+            );
+        } else {
+            Tensor input_cpu = input_c.to(Device(DeviceType::CPU));
+            Tensor weight_cpu = weight.to(Device(DeviceType::CPU));
+            Tensor out_cpu = Tensor::zeros(out_shape, Device(DeviceType::CPU));
+            kernels::cpu::embedding_forward_f32(
+                weight.get_shape()[0], weight.get_shape()[1],
+                input.numel(), weight_cpu.data_ptr(),
+                input_cpu.data_ptr(), out_cpu.data_ptr()
+            );
+            out = out_cpu.to(dev);
+        }
 
         if (weight.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -909,7 +984,7 @@ namespace axon {
             fn -> next_edges.push_back({weight.get_grad_fn(), std::make_shared<Tensor>(weight)});
             out.set_grad_fn(fn);
         }
-        
+
         return out;
     }
 
@@ -943,13 +1018,14 @@ namespace axon {
     };
 
     Tensor layer_norm(Tensor input, Tensor gamma, Tensor beta, float eps) {
-        
+
         int dim = input.get_shape().back();
         if (gamma.numel() != dim || beta.numel() != dim) {
             throw std::invalid_argument("[LAYERNORM] Shape mismatch");
-        } 
+        }
 
-        Tensor out = Tensor::zeros(input.get_shape());
+        Device dev = input.device();
+        Tensor out = Tensor::zeros(input.get_shape(), dev);
 
         size_t cols = dim;
         size_t rows = input.numel() / cols;
@@ -958,7 +1034,16 @@ namespace axon {
         Tensor gam_c = gamma.is_contiguous() ? gamma : gamma.contiguous();
         Tensor bet_c = beta.is_contiguous() ? beta : beta.contiguous();
 
-        kernels::cpu::layernorm_forward_f32(rows, cols, in_c.data_ptr(), gam_c.data_ptr(), bet_c.data_ptr(), out.data_ptr(), eps);
+        if (dev.type == DeviceType::CPU) {
+            kernels::cpu::layernorm_forward_f32(rows, cols, in_c.data_ptr(), gam_c.data_ptr(), bet_c.data_ptr(), out.data_ptr(), eps);
+        } else {
+            Tensor in_cpu = in_c.to(Device(DeviceType::CPU));
+            Tensor gam_cpu = gam_c.to(Device(DeviceType::CPU));
+            Tensor bet_cpu = bet_c.to(Device(DeviceType::CPU));
+            Tensor out_cpu = Tensor::zeros(input.get_shape(), Device(DeviceType::CPU));
+            kernels::cpu::layernorm_forward_f32(rows, cols, in_cpu.data_ptr(), gam_cpu.data_ptr(), bet_cpu.data_ptr(), out_cpu.data_ptr(), eps);
+            out = out_cpu.to(dev);
+        }
 
         if ((input.requires_grad() || gamma.requires_grad() || beta.requires_grad()) && GradMode::is_enabled()) {
             out.set_requires_grad(true);
@@ -992,12 +1077,20 @@ namespace axon {
     };
 
     Tensor softmax(Tensor t) {
-        Tensor out = Tensor::zeros(t.get_shape());
+        Device dev = t.device();
+        Tensor out = Tensor::zeros(t.get_shape(), dev);
         size_t cols = t.get_shape().back();
         size_t rows = t.numel() / cols;
 
         Tensor t_c = t.is_contiguous() ? t : t.contiguous();
-        kernels::cpu::softmax_f32(rows, cols, t_c.data_ptr(), out.data_ptr());
+        if (dev.type == DeviceType::CPU) {
+            kernels::cpu::softmax_f32(rows, cols, t_c.data_ptr(), out.data_ptr());
+        } else {
+            Tensor t_cpu = t_c.to(Device(DeviceType::CPU));
+            Tensor out_cpu = Tensor::zeros(t.get_shape(), Device(DeviceType::CPU));
+            kernels::cpu::softmax_f32(rows, cols, t_cpu.data_ptr(), out_cpu.data_ptr());
+            out = out_cpu.to(dev);
+        }
 
         if (t.requires_grad() && GradMode::is_enabled()) {
             out.set_requires_grad(true);
