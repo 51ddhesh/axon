@@ -19,4 +19,16 @@ endif()
 
 include_directories(include)
 
+add_library(axon STATIC)
+target_sources(axon PRIVATE
+    src/core/storage.cpp
+)
+
+target_link_libraries(axon PUBLIC Threads::Threads)
+
+if(CUDA_ENABLED)
+    target_link_libraries(axon PUBLIC CUDA::cublas CUDA::cudart)
+endif()
+
 add_executable(ax main.cpp)
+target_link_libraries(ax axon)
