@@ -38,6 +38,13 @@ public:
     }
     int ref_count() const { return ref_count_.load(); }
 
+    // Clone - create a new independent copy
+    StorageBody* clone() const {
+        StorageBody* new_body = new StorageBody(size_, device_);
+        std::memcpy(new_body->data_, data_, size_ * sizeof(float));
+        return new_body;
+    }
+
     // Operations
     void zero();
     void fill(float value);

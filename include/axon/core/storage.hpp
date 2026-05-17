@@ -20,18 +20,37 @@ public:
     Storage& operator=(const Storage& other);
     Storage& operator=(Storage&& other) noexcept;
 
-    // Access
-    float* data() { return body_ ? body_->data() : nullptr; }
+    // Read-only access - no copy triggered
     const float* data() const { return body_ ? body_->data() : nullptr; }
+    
+    // Mutable access - triggers copy-on-write when shared
+    float* data() { 
+        if (body_ && !is_unique()) {
+            body_.reset(body_->clone());
+        }
+        return body_ ? body_->data() : nullptr; 
+    }
+
     size_t size() const { return body_ ? body_->size() : 0; }
     Device device() const { return body_ ? body_->device() : CPU(); }
 
     bool is_valid() const { return body_ != nullptr; }
     bool is_unique() const { return body_ && body_->ref_count() == 1; }
 
-    // Operations
-    void zero();
-    void fill(float value);
+    // Operations - auto copy-on-write only when shared
+    void zero() {
+        if (body_ && !is_unique()) {
+            body_.reset(body_->clone());
+        }
+        if (body_) body_->zero();
+    }
+
+    void fill(float value) {
+        if (body_ && !is_unique()) {
+            body_.reset(body_->clone());
+        }
+        if (body_) body_->fill(value);
+    }
 };
 
 inline Storage::Storage(size_t size, Device device) {
@@ -64,14 +83,6 @@ inline Storage& Storage::operator=(Storage&& other) noexcept {
         other.body_ = nullptr;
     }
     return *this;
-}
-
-inline void Storage::zero() {
-    if (body_) body_->zero();
-}
-
-inline void Storage::fill(float value) {
-    if (body_) body_->fill(value);
 }
 
 } // namespace axon::core
