@@ -1,5 +1,6 @@
 add_executable(axon_test
     core/storage_test.cpp
+    tensor/tensor_test.cpp
 )
 
 target_link_libraries(axon_test PRIVATE

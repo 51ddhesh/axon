@@ -200,8 +200,3 @@ TEST_F(StorageTest, StorageWithArena) {
     // Storage went out of scope, but arena should still hold the memory
     EXPECT_EQ(arena.used(), 256);
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
