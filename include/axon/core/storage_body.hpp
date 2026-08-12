@@ -1,8 +1,8 @@
 #pragma once
 
 #include "device.hpp"
+#include "arena.hpp"
 #include <cstddef>
-#include <atomic>
 #include <stdexcept>
 #include <cstring>
 
@@ -13,10 +13,10 @@ private:
     float* data_;
     size_t size_;
     Device device_;
-    std::atomic<int> ref_count_;
+    Arena* arena_;
 
 public:
-    StorageBody(size_t size, Device device);
+    StorageBody(size_t size, Device device, Arena* arena = nullptr);
     ~StorageBody();
 
     // Non-copyable
@@ -28,26 +28,25 @@ public:
     const float* data() const { return data_; }
     size_t size() const { return size_; }
     Device device() const { return device_; }
-
-    // Reference counting
-    void inc_ref() { ++ref_count_; }
-    void dec_ref() { 
-        if (--ref_count_ == 0) {
-            delete this; 
-        }
-    }
-    int ref_count() const { return ref_count_.load(); }
+    Arena* arena() const { return arena_; }
 
     // Clone - create a new independent copy
     StorageBody* clone() const {
-        StorageBody* new_body = new StorageBody(size_, device_);
-        std::memcpy(new_body->data_, data_, size_ * sizeof(float));
+        StorageBody* new_body = new StorageBody(size_, device_, arena_);
+        if (device_.is_cpu()) {
+            std::memcpy(new_body->data_, data_, size_ * sizeof(float));
+        } else {
+#ifdef __CUDACC__
+            cudaMemcpy(new_body->data_, data_, size_ * sizeof(float), cudaMemcpyDeviceToDevice);
+#endif
+        }
         return new_body;
     }
 
     // Operations
     void zero();
     void fill(float value);
+    void resize(size_t new_size);
 
 private:
     void allocate();
@@ -55,8 +54,8 @@ private:
 };
 
 // Implementation
-inline StorageBody::StorageBody(size_t size, Device device)
-    : size_(size), device_(device), ref_count_(1) {
+inline StorageBody::StorageBody(size_t size, Device device, Arena* arena)
+    : size_(size), device_(device), arena_(arena) {
     allocate();
 }
 
@@ -65,6 +64,12 @@ inline StorageBody::~StorageBody() {
 }
 
 inline void StorageBody::allocate() {
+    if (arena_) {
+        data_ = static_cast<float*>(arena_->allocate(size_ * sizeof(float)));
+        zero();
+        return;
+    }
+
     if (device_.is_cpu()) {
 #ifdef __CUDACC__
         cudaMalloc(&data_, size_ * sizeof(float));
@@ -85,7 +90,7 @@ inline void StorageBody::allocate() {
 }
 
 inline void StorageBody::deallocate() {
-    if (data_) {
+    if (data_ && !arena_) {
         if (device_.is_cpu()) {
             std::free(data_);
         } else {
@@ -94,6 +99,8 @@ inline void StorageBody::deallocate() {
 #endif
         }
         data_ = nullptr;
+    } else if (data_ && arena_) {
+        data_ = nullptr; // Let arena manage it
     }
 }
 
@@ -118,6 +125,33 @@ inline void StorageBody::fill(float value) {
             data_[i] = value;
         }
 #endif
+    }
+}
+
+inline void StorageBody::resize(size_t new_size) {
+    if (new_size <= size_) return;
+
+    float* old_data = data_;
+    size_t old_size = size_;
+    
+    size_ = new_size;
+    allocate(); // allocates new_size into data_ and zeros it
+    
+    // Copy old data
+    if (old_data) {
+        if (device_.is_cpu()) {
+            std::memcpy(data_, old_data, old_size * sizeof(float));
+        } else {
+#ifdef __CUDACC__
+            cudaMemcpy(data_, old_data, old_size * sizeof(float), cudaMemcpyDeviceToDevice);
+#endif
+        }
+        
+        // Temporarily swap back to old_data to deallocate it properly
+        float* new_data_ptr = data_;
+        data_ = old_data;
+        deallocate();
+        data_ = new_data_ptr;
     }
 }
 

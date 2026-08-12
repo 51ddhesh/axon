@@ -138,6 +138,69 @@ TEST_F(StorageTest, ArenaOutOfMemory) {
     EXPECT_THROW(arena.allocate(512), std::bad_alloc);
 }
 
+TEST_F(StorageTest, StorageResizeGrow) {
+    axon::core::Storage s(5, axon::core::CPU());
+    s.fill(1.0f);
+    
+    s.resize(10);
+    EXPECT_EQ(s.size(), 10);
+    
+    // Check old data is preserved
+    EXPECT_FLOAT_EQ(s.data()[0], 1.0f);
+    EXPECT_FLOAT_EQ(s.data()[4], 1.0f);
+    
+    // Check new data is zeroed
+    EXPECT_FLOAT_EQ(s.data()[5], 0.0f);
+    EXPECT_FLOAT_EQ(s.data()[9], 0.0f);
+}
+
+TEST_F(StorageTest, StorageResizeIgnoreShrink) {
+    axon::core::Storage s(10, axon::core::CPU());
+    s.fill(2.0f);
+    
+    s.resize(5); // Should do nothing
+    EXPECT_EQ(s.size(), 10);
+    EXPECT_FLOAT_EQ(s.data()[9], 2.0f);
+}
+
+TEST_F(StorageTest, StorageResizeShared) {
+    axon::core::Storage s1(5, axon::core::CPU());
+    s1.fill(3.0f);
+    
+    axon::core::Storage s2 = s1;
+    EXPECT_FALSE(s1.is_unique());
+    
+    s2.resize(10);
+    
+    // After resize, s2 should be unique and larger, s1 should remain unchanged
+    EXPECT_TRUE(s2.is_unique());
+    EXPECT_TRUE(s1.is_unique());
+    EXPECT_EQ(s1.size(), 5);
+    EXPECT_EQ(s2.size(), 10);
+    
+    EXPECT_FLOAT_EQ(s1.data()[0], 3.0f);
+    EXPECT_FLOAT_EQ(s2.data()[0], 3.0f);
+    EXPECT_FLOAT_EQ(s2.data()[5], 0.0f);
+}
+
+TEST_F(StorageTest, StorageWithArena) {
+    axon::core::Arena arena(1024);
+    
+    {
+        // 10 floats = 40 bytes -> aligned to 256
+        axon::core::Storage s(10, axon::core::CPU(), &arena);
+        EXPECT_EQ(s.size(), 10);
+        s.fill(4.0f);
+        EXPECT_FLOAT_EQ(s.data()[5], 4.0f);
+        
+        // Arena should show used memory
+        EXPECT_EQ(arena.used(), 256);
+    }
+    
+    // Storage went out of scope, but arena should still hold the memory
+    EXPECT_EQ(arena.used(), 256);
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
